@@ -24,7 +24,8 @@ Environment::Environment(char * filename) :
     std::cout << "X=" << x << " Y=" << y << std::endl;
 #endif
     env = new char*[y];
-    for (size_t i=0;i<x;++i) {
+    for (size_t i=0;i<x;++i) 
+    {
       env[i] = new char[x];
     }
     try {
@@ -58,22 +59,26 @@ Environment::Environment(char * filename) :
 }
 
 Environment::~Environment() {
-  if (init) {
+  if (init) 
+  {
     for (size_t i=0;i<x;++i) { delete [] env[i]; }
     delete [] env;
   }
 }
 
-bool Environment::AtHome() const {
+bool Environment::AtHome() const 
+{
   return (ax==hx && ay==hy);
 }
 
-void Environment::Print() const {
+void Environment::Print() const 
+{
   const size_t width = 5;
   char prev_filler = std::cout.fill();  // save the original fill character
   std::cout << "============================\nAgent\nposition: " 
     << ax << " " << ay << "\nheading: ";
-  switch (ah) {
+  switch (ah) 
+  {
     case  EAST : std::cout << ">";break;
     case  WEST : std::cout << "<";break;
     case  NORTH: std::cout << "^";break;
@@ -89,7 +94,9 @@ void Environment::Print() const {
 	////////////////////////////////////////////////////////////
 	if (i==ax && j==ay) {
 	  ++w;
-	  switch (ah) {
+    //Agent Heading
+	  switch (ah) 
+    {
 	    case  EAST : std::cout << ">";break;
 	    case  WEST : std::cout << "<";break;
 	    case  NORTH: std::cout << "^";break;
@@ -97,7 +104,9 @@ void Environment::Print() const {
 	  }
 	}
 	////////////////////////////////////////////////////////////
-	if (i==hx && j==hy) {
+  //Define Homing Here
+	if (i==hx && j==hy) 
+  {
 	  ++w;
 	  std::cout << "H";
 	}
@@ -112,10 +121,12 @@ void Environment::Print() const {
 
 bool Environment::Done() const { return (!init || done);}
 
-void Environment::Step() {
+void Environment::Step() 
+{
   if (Done()) return;
 
-  if (++steps == max_steps) { 
+  if (++steps == max_steps) 
+  { 
     std::cout << "Agent timout: score " << score << std::endl;
     done=true;
     return;
