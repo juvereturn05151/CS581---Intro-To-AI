@@ -15,6 +15,6 @@ enum Action {LEFT,RIGHT,FORWARD,SUCK,SHUTOFF,NOOP};
 enum Heading {NORTH,EAST,SOUTH,WEST};
 
 const size_t initial_charge = 100;
-const size_t max_steps = 10000;
+const size_t max_steps = 200;
 
 #endif
