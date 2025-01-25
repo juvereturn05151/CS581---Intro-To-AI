@@ -16,313 +16,280 @@ Agent::Agent(int random_seed) : facing(NORTH), currentX(0), currentY(0), isRetur
   agentPositionHistory.push_back({currentX, currentY});
 }
 
-Action Agent::GetAction(Percept p)
-{
-  // straight-forward beahavior
-  if (p.dirt)
-  {
-    return SUCK;
-  }
-
-  /*if(firstMove)
-  {
-    firstMove = false;
-    std::cout<<"first move"<<std::endl;
-    return NOOP;
-  }*/
-
-  std::cout<<"agent pos: "<< currentX<<" , "<<currentY<<std::endl;
-  std::cout<<"current direction: "<< (Heading)facing<<std::endl;
-
-  if (p.bump)
-  {
-     std::cout<<"bump "<<std::endl;
-    return TurnRightOnHitWall();
-  }
-
-  if (p.home)
-  {
-    if (isReturningToBase)
-    {
-      return SHUTOFF;
+Action Agent::GetAction(Percept p) {
+    if (p.dirt) {
+        return SUCK;
     }
-  }
 
+    std::cout << "agent pos: " << currentX << " , " << currentY << std::endl;
+    std::cout << "current direction: " << (Heading)facing << std::endl;
 
-  return Move();
+    if (p.bump) {
+        std::cout << "bump " << std::endl;
+        return TurnRightOnHitWall();
+    }
+
+    if (p.home) {
+        if (isReturningToBase) {
+            return SHUTOFF;
+        }
+    }
+
+    return Move();
 }
 
-Action Agent::Move()
-{
-  if (isReturningToBase)
-  {
-    return Backtrack();
-  }
-  else
-  {
-    return MoveForward();
-  }
-      printHistoryDebug();
+Action Agent::Move() {
+    if (isReturningToBase) {
+        return Backtrack();
+    }
+    else {
+        return MoveForward();
+    }
 }
 
-Action Agent::Backtrack()
-{
-   Position prevPos = agentPositionHistory.back();
-   if(prevPos.x == currentX && prevPos.y == currentY)
-   {
-    agentPositionHistory.pop_back();
-    return NOOP;
-   }
-   switch (facing)
-    {
+Action Agent::Backtrack() {
+    Position prevPos = agentPositionHistory.back();
+    if (prevPos.x == currentX && prevPos.y == currentY) {
+        agentPositionHistory.pop_back();
+        return NOOP;
+    }
+    switch (facing) {
     case NORTH:
-      if(prevPos.x == currentX && prevPos.y == currentY + 1)
-      {
-        agentPositionHistory.pop_back();
-        currentX = prevPos.x;
-        currentY = prevPos.y;
-        return FORWARD;
-      }else
-      {
-        return TurnRightWithoutHistory();
-      }
-      
-      break;
+        if (prevPos.x == currentX && prevPos.y == currentY + 1) {
+            agentPositionHistory.pop_back();
+            currentX = prevPos.x;
+            currentY = prevPos.y;
+            return FORWARD;
+        } else {
+            return TurnRightWithoutHistory();
+        }
+
     case EAST:
-      if(prevPos.x == currentX + 1&& prevPos.y == currentY)
-      {
-        agentPositionHistory.pop_back();
-        currentX = prevPos.x;
-        currentY = prevPos.y;
-        return FORWARD;
-      }else
-      {
-        return TurnRightWithoutHistory();
-      }
-      break;
+        if (prevPos.x == currentX + 1 && prevPos.y == currentY) {
+            agentPositionHistory.pop_back();
+            currentX = prevPos.x;
+            currentY = prevPos.y;
+            return FORWARD;
+        } else {
+            return TurnRightWithoutHistory();
+        }
+        break;
+
     case SOUTH:
-      if(prevPos.x == currentX && prevPos.y == currentY - 1)
-      {
-        agentPositionHistory.pop_back();
-        currentX = prevPos.x;
-        currentY = prevPos.y;
-        return FORWARD;
-      }else
-      {
-        return TurnRightWithoutHistory();
-      }
-      break;
+        if (prevPos.x == currentX && prevPos.y == currentY - 1) {
+            agentPositionHistory.pop_back();
+            currentX = prevPos.x;
+            currentY = prevPos.y;
+            return FORWARD;
+        } else {
+            return TurnRightWithoutHistory();
+        }
+        break;
+
     case WEST:
-      if(prevPos.x == currentX - 1 && prevPos.y == currentY )
-      {
-        agentPositionHistory.pop_back();
-        currentX = prevPos.x;
-        currentY = prevPos.y;
-        return FORWARD;
-      }else
-      {
-        return TurnRightWithoutHistory();
-      }
-      break;
+        if (prevPos.x == currentX - 1 && prevPos.y == currentY) {
+            agentPositionHistory.pop_back();
+            currentX = prevPos.x;
+            currentY = prevPos.y;
+            return FORWARD;
+        } else {
+            return TurnRightWithoutHistory();
+        }
+        break;
     }
     return NOOP;
 }
 
-Action Agent::MoveForward()
-{
-  switch (facing)
-  {
-  case NORTH:
-
-    if (IsVisisted(currentX, currentY + 1))
-    {
-      return TurnRight();
-    }
-    currentY++;
-    break;
-  case EAST:
-    if (IsVisisted(currentX + 1, currentY))
-    {
-      return TurnRight();
-    }
-    currentX++;
-    break;
-  case SOUTH:
-    if (IsVisisted(currentX, currentY - 1))
-    {
-      return TurnRight();
-    }
-    currentY--;
-    break;
-  case WEST:
-  printHistoryDebug();
-    if (IsVisisted(currentX - 1, currentY))
-    {
-      return TurnRight();
-    }
-    currentX--;
-    break;
-  }
-         std::cout<<"move forward"<<std::endl;
-  agentPositionHistory.push_back({currentX, currentY});
-  actionHistory.push(FORWARD);
-  return FORWARD;
-}
-
-void Agent::printHistoryDebug()
-{
-  for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it)
-  {
-    std::cout<< "x = " << it->x <<", y = " <<it->y<<std::endl;
-  }
-  printf("wall\n");
-    for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it)
-  {
-    std::cout<< "x = " << it->x <<", y = " <<it->y<<std::endl;
-  }
-
-  CalculateBoundary();
-}
-
-Action Agent::TurnRight()
-{
-  switch (facing)
-  {
-  case NORTH:
-    facing = EAST;
-    break;
-  case EAST:
-    facing = SOUTH;
-    break;
-  case SOUTH:
-    facing = WEST;
-    break;
-  case WEST:
-    facing = NORTH;
-    break;
-  }
-
-  actionHistory.push(RIGHT);
-  return RIGHT;
-}
-
-Action Agent::TurnRightWithoutHistory()
-{
-  switch (facing)
-  {
-  case NORTH:
-    facing = EAST;
-    break;
-  case EAST:
-    facing = SOUTH;
-    break;
-  case SOUTH:
-    facing = WEST;
-    break;
-  case WEST:
-    facing = NORTH;
-    break;
-  }
-
-  return RIGHT;
-}
-
-Action Agent::TurnRightOnHitWall()
-{
-  int wallPosX = 0;
-  int wallPosY = 0;
-  int tempAgentPosX = currentX;
-  int tempAgentPosY = currentY;
-    wallPositions.push_back({currentX, currentY});
-  agentPositionHistory.pop_back();
-  stuckOnSameSpotCount++;
-  switch (facing)
-  {
-  case NORTH:
-    wallPosY = ++tempAgentPosY;
-    currentY--;
-    break;
-  case EAST:
-
-    wallPosX = ++tempAgentPosX;
-    currentX--;
-    break;
-  case SOUTH:
-    wallPosY = --tempAgentPosY;
+Action Agent::MoveForward() {
+    switch (facing) {
+    case NORTH:
+        if (IsVisisted(currentX, currentY + 1)) {
+            return TurnRight();
+        }
         currentY++;
-    break;
-  case WEST:
-    wallPosX = --tempAgentPosX;
+        break;
+    case EAST:
+        if (IsVisisted(currentX + 1, currentY)) {
+            return TurnRight();
+        }
         currentX++;
-    break;
-  }
+        break;
+    case SOUTH:
+        if (IsVisisted(currentX, currentY - 1)) {
+            return TurnRight();
+        }
+        currentY--;
+        break;
+    case WEST:
+        if (IsVisisted(currentX - 1, currentY)) {
+            return TurnRight();
+        }
+        currentX--;
+        break;
+    }
 
-
-  return TurnRight();
+    agentPositionHistory.push_back({currentX, currentY});
+    actionHistory.push(FORWARD);
+    return FORWARD;
 }
 
-bool Agent::IsVisisted(int x, int y)
-{
-  for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it)
-  {
-    if (it->x == x && it->y == y)
-    {
-      stuckOnSameSpotCount++;
-      if (stuckOnSameSpotCount >= 4)
-      {
-        isReturningToBase = true;
-      }
-      return true;
+void Agent::printHistoryDebug() {
+    for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
+        std::cout << "x = " << it->x << ", y = " << it->y << std::endl;
     }
-  }
-  stuckOnSameSpotCount = 0;
-  return false;
+
+    CalculateBoundary();
 }
 
-void Agent::CalculateBoundary()
-{
-  printf("map\n");
-  for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it)
-  {
-    if(it->x <= xMinBoundary)
-    {
-      xMinBoundary = it->x;
+Action Agent::TurnRight() {
+    switch (facing) {
+    case NORTH:
+        facing = EAST;
+        break;
+    case EAST:
+        facing = SOUTH;
+        break;
+    case SOUTH:
+        facing = WEST;
+        break;
+    case WEST:
+        facing = NORTH;
+        break;
     }
-    if(it->x >= xMaxBoundary)
-    {
-      xMaxBoundary = it->x;
-    }
-    if(it->y <= yMinBoundary)
-    {
-      yMinBoundary = it->y;
-    }
-    if(it->y >= yMaxBoundary)
-    {
-      yMaxBoundary = it->y;
-    }
-  }
-              std::cout<< "xMinBoundary = " << xMinBoundary <<", yMinBoundary = " <<yMinBoundary<<std::endl;
-                            std::cout<< "xMaxBoundary = " << xMaxBoundary <<", yMaxBoundary = " <<yMaxBoundary<<std::endl;
-  for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it)
-  {
-    if(it->x <= xWallMinBoundary)
-    {
-      xWallMinBoundary = it->x;
-    }
-    if(it->x >= xWallMaxBoundary)
-    {
-      xWallMaxBoundary = it->x;
-    }
-    if(it->y <= yWallMinBoundary)
-    {
-      yWallMinBoundary = it->y;
-    }
-    if(it->y >= yWallMaxBoundary)
-    {
-      yWallMaxBoundary = it->y;
-    }
-  }
-                std::cout<< "xWallMinBoundary = " << xWallMinBoundary <<", yWallMinBoundary = " <<yWallMinBoundary<<std::endl;
-                            std::cout<< "xWallMaxBoundary = " << xMaxBoundary <<", yWallMaxBoundary = " <<yMaxBoundary<<std::endl;
 
-  }
+    actionHistory.push(RIGHT);
+    return RIGHT;
+}
+
+Action Agent::TurnRightWithoutHistory() {
+    switch (facing) {
+    case NORTH:
+        facing = EAST;
+        break;
+    case EAST:
+        facing = SOUTH;
+        break;
+    case SOUTH:
+        facing = WEST;
+        break;
+    case WEST:
+        facing = NORTH;
+        break;
+    }
+
+    return RIGHT;
+}
+
+Action Agent::TurnRightOnHitWall() {
+    int wallPosX = 0;
+    int wallPosY = 0;
+    int tempAgentPosX = currentX;
+    int tempAgentPosY = currentY;
+
+    wallPositions.push_back({currentX, currentY});
+    agentPositionHistory.pop_back();
+    stuckOnSameSpotCount++;
+
+    switch (facing) {
+    case NORTH:
+        wallPosY = ++tempAgentPosY;
+        currentY--;
+        break;
+    case EAST:
+        wallPosX = ++tempAgentPosX;
+        currentX--;
+        break;
+    case SOUTH:
+        wallPosY = --tempAgentPosY;
+        currentY++;
+        break;
+    case WEST:
+        wallPosX = --tempAgentPosX;
+        currentX++;
+        break;
+    }
+
+    return TurnRight();
+}
+
+bool Agent::IsVisisted(int x, int y) {
+    for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
+        if (it->x == x && it->y == y) {
+            stuckOnSameSpotCount++;
+            if (stuckOnSameSpotCount >= 4) {
+                isReturningToBase = true;
+                printHistoryDebug();
+            }
+            return true;
+        }
+    }
+    stuckOnSameSpotCount = 0;
+    return false;
+}
+
+void Agent::CalculateBoundary() {
+    for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
+        if (it->x <= xMinBoundary) {
+            xMinBoundary = it->x;
+        }
+        if (it->x >= xMaxBoundary) {
+            xMaxBoundary = it->x;
+        }
+        if (it->y <= yMinBoundary) {
+            yMinBoundary = it->y;
+        }
+        if (it->y >= yMaxBoundary) {
+            yMaxBoundary = it->y;
+        }
+    }
+
+    for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it) {
+        if (it->x <= xWallMinBoundary) {
+            xWallMinBoundary = it->x;
+        }
+        if (it->x >= xWallMaxBoundary) {
+            xWallMaxBoundary = it->x;
+        }
+        if (it->y <= yWallMinBoundary) {
+            yWallMinBoundary = it->y;
+        }
+        if (it->y >= yWallMaxBoundary) {
+            yWallMaxBoundary = it->y;
+        }
+    }
+
+    FindUnexploredCoordinates();
+}
+
+void Agent::FindUnexploredCoordinates() {
+    std::list<Position> unexplored;
+
+    // Iterate through all positions within the agent boundary
+    for (int x = xMinBoundary; x <= xMaxBoundary; ++x) {
+        for (int y = yMinBoundary; y <= yMaxBoundary; ++y) {
+            Position current = {x, y};
+            bool isVisited = false;
+            bool isWall = false;
+
+            for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
+                if (it->x == x && it->y == y) {
+                    isVisited = true;
+                }
+            }
+            for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it) {
+                if (it->x == x && it->y == y) {
+                    isWall = true;
+                }
+            }
+
+            if (!isVisited && !isWall) {
+                unexplored.push_back(current);
+            }
+        }
+    }
+
+    std::cout << "Unexplored coordinates:\n";
+    for (const auto& pos : unexplored) {
+        std::cout << "(" << pos.x << ", " << pos.y << ")\n";
+    }
+}

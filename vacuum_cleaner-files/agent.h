@@ -4,6 +4,7 @@
 #include <utility>
 #include <list>
 #include <stack>
+#include <set>
 
 struct Position
 {
@@ -48,6 +49,7 @@ class Agent {
     bool IsVisisted(int x, int y);
     void printHistoryDebug();
     void CalculateBoundary();
+    void FindUnexploredCoordinates();
 };
 
 #endif
