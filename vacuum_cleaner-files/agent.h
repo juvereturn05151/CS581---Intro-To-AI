@@ -25,16 +25,20 @@ class Agent {
     bool startTurning180degree;
     int turning90degreeCounter;
     bool hasTurn180degree;
+    bool firstMove;
     std::list<Position> agentPositionHistory; 
     std::list<Position> wallPositions; 
     std::stack<Action> actionHistory; 
+    Action lastestAction;
 
     Action Move();
     Action MoveForward();
     Action Backtrack();
     Action TurnRight();
+    Action TurnRightWithoutHistory();
     Action TurnRightOnHitWall();
     bool IsVisisted(int x, int y);
+    void printHistoryDebug();
 };
 
 #endif

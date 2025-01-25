@@ -4,7 +4,7 @@
 #include <iostream>
 
 Agent::Agent(int random_seed) : facing(NORTH), currentX(0), currentY(0), isReturningToBase(false), stuckOnSameSpotCount(0)
-,startTurning180degree(false), turning90degreeCounter(0), hasTurn180degree(false)
+,startTurning180degree(false), turning90degreeCounter(0), hasTurn180degree(false), firstMove(true)
 {
   // supplying your own seed may help debugging, same seed will cause
   // same random number sequence
@@ -24,8 +24,19 @@ Action Agent::GetAction(Percept p)
     return SUCK;
   }
 
+  /*if(firstMove)
+  {
+    firstMove = false;
+    std::cout<<"first move"<<std::endl;
+    return NOOP;
+  }*/
+
+  std::cout<<"agent pos: "<< currentX<<" , "<<currentY<<std::endl;
+  std::cout<<"current direction: "<< (Heading)facing<<std::endl;
+
   if (p.bump)
   {
+     std::cout<<"bump "<<std::endl;
     return TurnRightOnHitWall();
   }
 
@@ -36,6 +47,7 @@ Action Agent::GetAction(Percept p)
       return SHUTOFF;
     }
   }
+
 
   return Move();
 }
@@ -54,46 +66,65 @@ Action Agent::Move()
 
 Action Agent::Backtrack()
 {
-  Action action = Action::NOOP;
-  if (!actionHistory.empty()) {
-        action = actionHistory.top();
-        std::cout<<"pop "<<action<<std::endl;
-    }
-    
-    if (action == RIGHT)
+   Position prevPos = agentPositionHistory.back();
+   if(prevPos.x == currentX && prevPos.y == currentY)
+   {
+    agentPositionHistory.pop_back();
+    return NOOP;
+   }
+   switch (facing)
     {
-      actionHistory.pop();
-      return LEFT;
-    }
-    else if(action == FORWARD) 
-    {
-      if(hasTurn180degree)
+    case NORTH:
+      if(prevPos.x == currentX && prevPos.y == currentY + 1)
       {
-        actionHistory.pop();
-        hasTurn180degree = false;
+        agentPositionHistory.pop_back();
+        currentX = prevPos.x;
+        currentY = prevPos.y;
         return FORWARD;
       }else
       {
-      startTurning180degree = true;
+        return TurnRightWithoutHistory();
       }
-
-    }
-
-    if(startTurning180degree)
-    {
-      turning90degreeCounter++;
-      std::cout<<"turning90degreeCounter "<<turning90degreeCounter<<std::endl;
-      if(turning90degreeCounter == 2)
+      
+      break;
+    case EAST:
+      if(prevPos.x == currentX + 1&& prevPos.y == currentY)
       {
-        startTurning180degree = false;
-         hasTurn180degree = true;
-         turning90degreeCounter = 0;
+        agentPositionHistory.pop_back();
+        currentX = prevPos.x;
+        currentY = prevPos.y;
+        return FORWARD;
+      }else
+      {
+        return TurnRightWithoutHistory();
       }
-      return LEFT;
+      break;
+    case SOUTH:
+      if(prevPos.x == currentX && prevPos.y == currentY - 1)
+      {
+        agentPositionHistory.pop_back();
+        currentX = prevPos.x;
+        currentY = prevPos.y;
+        return FORWARD;
+      }else
+      {
+        return TurnRightWithoutHistory();
+      }
+      break;
+    case WEST:
+      if(prevPos.x == currentX - 1 && prevPos.y == currentY )
+      {
+        agentPositionHistory.pop_back();
+        currentX = prevPos.x;
+        currentY = prevPos.y;
+        return FORWARD;
+      }else
+      {
+        return TurnRightWithoutHistory();
+      }
+      break;
     }
-    
-    return action;
- 
+    return NOOP;
 }
 
 Action Agent::MoveForward()
@@ -101,6 +132,7 @@ Action Agent::MoveForward()
   switch (facing)
   {
   case NORTH:
+
     if (IsVisisted(currentX, currentY + 1))
     {
       return TurnRight();
@@ -122,6 +154,7 @@ Action Agent::MoveForward()
     currentY--;
     break;
   case WEST:
+  printHistoryDebug();
     if (IsVisisted(currentX - 1, currentY))
     {
       return TurnRight();
@@ -129,10 +162,18 @@ Action Agent::MoveForward()
     currentX--;
     break;
   }
-
+         std::cout<<"move forward"<<std::endl;
   agentPositionHistory.push_back({currentX, currentY});
   actionHistory.push(FORWARD);
   return FORWARD;
+}
+
+void Agent::printHistoryDebug()
+{
+  for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it)
+  {
+    std::cout<< "x = " << it->x <<"y = " <<it->y<<std::endl;
+  }
 }
 
 Action Agent::TurnRight()
@@ -157,26 +198,52 @@ Action Agent::TurnRight()
   return RIGHT;
 }
 
+Action Agent::TurnRightWithoutHistory()
+{
+  switch (facing)
+  {
+  case NORTH:
+    facing = EAST;
+    break;
+  case EAST:
+    facing = SOUTH;
+    break;
+  case SOUTH:
+    facing = WEST;
+    break;
+  case WEST:
+    facing = NORTH;
+    break;
+  }
+
+  return RIGHT;
+}
+
 Action Agent::TurnRightOnHitWall()
 {
   int wallPosX = 0;
   int wallPosY = 0;
   int tempAgentPosX = currentX;
   int tempAgentPosY = currentY;
-
+  agentPositionHistory.pop_back();
   switch (facing)
   {
   case NORTH:
     wallPosY = ++tempAgentPosY;
+    currentY--;
     break;
   case EAST:
+
     wallPosX = ++tempAgentPosX;
+    currentX--;
     break;
   case SOUTH:
     wallPosY = --tempAgentPosY;
+        currentY++;
     break;
   case WEST:
     wallPosX = --tempAgentPosX;
+        currentX++;
     break;
   }
 

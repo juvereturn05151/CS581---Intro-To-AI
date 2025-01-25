@@ -73,6 +73,7 @@ bool Environment::AtHome() const
 
 void Environment::Print() const 
 {
+    std::cout << "============================Agentline: " ;
   const size_t width = 5;
   char prev_filler = std::cout.fill();  // save the original fill character
   std::cout << "============================\nAgent\nposition: " 
