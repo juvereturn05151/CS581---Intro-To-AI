@@ -226,6 +226,7 @@ Action Agent::TurnRightOnHitWall()
   int tempAgentPosX = currentX;
   int tempAgentPosY = currentY;
   agentPositionHistory.pop_back();
+  stuckOnSameSpotCount++;
   switch (facing)
   {
   case NORTH:
@@ -258,6 +259,7 @@ bool Agent::IsVisisted(int x, int y)
     if (it->x == x && it->y == y)
     {
       stuckOnSameSpotCount++;
+      std::cout<<"stuckOnSameSpotCount: "<< stuckOnSameSpotCount<<std::endl;
       if (stuckOnSameSpotCount >= 4)
       {
         isReturningToBase = true;
