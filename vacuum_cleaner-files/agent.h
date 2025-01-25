@@ -48,6 +48,7 @@ class Agent {
     float xWallMaxBoundary = 0;
     float yWallMinBoundary = 0;
     float yWallMaxBoundary = 0;
+    Position lastTurnPos;
 
     Action Move();
     Action MoveForward();
