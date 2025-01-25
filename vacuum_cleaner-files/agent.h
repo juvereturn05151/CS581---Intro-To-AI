@@ -35,6 +35,7 @@ class Agent {
     bool hasTurn180degree;
     bool firstMove;
     std::list<Position> agentPositionHistory; 
+        std::list<Position> notdeleteAgentPositionHistory; 
     std::list<Position> wallPositions; 
     std::stack<Action> actionHistory; 
     std::list<Position> unexplored;

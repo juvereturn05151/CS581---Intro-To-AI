@@ -14,6 +14,7 @@ Agent::Agent(int random_seed) : facing(NORTH), currentX(0), currentY(0), agentSt
     std::srand(random_seed); // random seed from user
 
   agentPositionHistory.push_back({currentX, currentY});
+  notdeleteAgentPositionHistory.push_back({currentX, currentY});
   unexplored.clear();
 }
 
@@ -56,6 +57,8 @@ Action Agent::Move() {
 
 Action Agent::GoToUnexplored()
 {
+    printHistoryDebug();
+    IsThereUnexploredCoordinates();
   return Backtrack();
     
 }
@@ -162,6 +165,7 @@ Action Agent::MoveForward() {
     }
     stuckOnSameSpotCount = 0;
     agentPositionHistory.push_back({currentX, currentY});
+      notdeleteAgentPositionHistory.push_back({currentX, currentY});
     actionHistory.push(FORWARD);
     return FORWARD;
 }
@@ -244,7 +248,7 @@ Action Agent::TurnRightOnHitWall() {
 }
 
 bool Agent::IsVisited(int x, int y) {
-    for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
+    for (auto it = notdeleteAgentPositionHistory.begin(); it != notdeleteAgentPositionHistory.end(); ++it) {
         if (it->x == x && it->y == y) {
             return true;
         }
@@ -305,9 +309,9 @@ unexplored.clear();
             bool isVisited = false;
             bool isWall = false;
 
-            if(agentPositionHistory.size() > 0 )
+            if(notdeleteAgentPositionHistory.size() > 0 )
             {
-                for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
+                for (auto it = notdeleteAgentPositionHistory.begin(); it != notdeleteAgentPositionHistory.end(); ++it) {
                 if (it->x == x && it->y == y) {
                     isVisited = true;
                 }
