@@ -62,6 +62,7 @@ Action Agent::Move()
   {
     return MoveForward();
   }
+      printHistoryDebug();
 }
 
 Action Agent::Backtrack()
@@ -172,8 +173,15 @@ void Agent::printHistoryDebug()
 {
   for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it)
   {
-    std::cout<< "x = " << it->x <<"y = " <<it->y<<std::endl;
+    std::cout<< "x = " << it->x <<", y = " <<it->y<<std::endl;
   }
+  printf("wall\n");
+    for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it)
+  {
+    std::cout<< "x = " << it->x <<", y = " <<it->y<<std::endl;
+  }
+
+  CalculateBoundary();
 }
 
 Action Agent::TurnRight()
@@ -225,6 +233,7 @@ Action Agent::TurnRightOnHitWall()
   int wallPosY = 0;
   int tempAgentPosX = currentX;
   int tempAgentPosY = currentY;
+    wallPositions.push_back({currentX, currentY});
   agentPositionHistory.pop_back();
   stuckOnSameSpotCount++;
   switch (facing)
@@ -248,7 +257,7 @@ Action Agent::TurnRightOnHitWall()
     break;
   }
 
-  wallPositions.push_back({wallPosX, wallPosY});
+
   return TurnRight();
 }
 
@@ -259,7 +268,6 @@ bool Agent::IsVisisted(int x, int y)
     if (it->x == x && it->y == y)
     {
       stuckOnSameSpotCount++;
-      std::cout<<"stuckOnSameSpotCount: "<< stuckOnSameSpotCount<<std::endl;
       if (stuckOnSameSpotCount >= 4)
       {
         isReturningToBase = true;
@@ -270,3 +278,51 @@ bool Agent::IsVisisted(int x, int y)
   stuckOnSameSpotCount = 0;
   return false;
 }
+
+void Agent::CalculateBoundary()
+{
+  printf("map\n");
+  for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it)
+  {
+    if(it->x <= xMinBoundary)
+    {
+      xMinBoundary = it->x;
+    }
+    if(it->x >= xMaxBoundary)
+    {
+      xMaxBoundary = it->x;
+    }
+    if(it->y <= yMinBoundary)
+    {
+      yMinBoundary = it->y;
+    }
+    if(it->y >= yMaxBoundary)
+    {
+      yMaxBoundary = it->y;
+    }
+  }
+              std::cout<< "xMinBoundary = " << xMinBoundary <<", yMinBoundary = " <<yMinBoundary<<std::endl;
+                            std::cout<< "xMaxBoundary = " << xMaxBoundary <<", yMaxBoundary = " <<yMaxBoundary<<std::endl;
+  for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it)
+  {
+    if(it->x <= xWallMinBoundary)
+    {
+      xWallMinBoundary = it->x;
+    }
+    if(it->x >= xWallMaxBoundary)
+    {
+      xWallMaxBoundary = it->x;
+    }
+    if(it->y <= yWallMinBoundary)
+    {
+      yWallMinBoundary = it->y;
+    }
+    if(it->y >= yWallMaxBoundary)
+    {
+      yWallMaxBoundary = it->y;
+    }
+  }
+                std::cout<< "xWallMinBoundary = " << xWallMinBoundary <<", yWallMinBoundary = " <<yWallMinBoundary<<std::endl;
+                            std::cout<< "xWallMaxBoundary = " << xMaxBoundary <<", yWallMaxBoundary = " <<yMaxBoundary<<std::endl;
+
+  }
