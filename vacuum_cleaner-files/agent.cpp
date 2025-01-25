@@ -3,7 +3,7 @@
 #include "agent.h"
 #include <iostream>
 
-Agent::Agent(int random_seed) : facing(NORTH), currentX(0), currentY(0), isReturningToBase(false), stuckOnSameSpotCount(0)
+Agent::Agent(int random_seed) : facing(NORTH), currentX(0), currentY(0), agentState(BlindlyMove), stuckOnSameSpotCount(0)
 ,startTurning180degree(false), turning90degreeCounter(0), hasTurn180degree(false), firstMove(true)
 {
   // supplying your own seed may help debugging, same seed will cause
@@ -14,6 +14,7 @@ Agent::Agent(int random_seed) : facing(NORTH), currentX(0), currentY(0), isRetur
     std::srand(random_seed); // random seed from user
 
   agentPositionHistory.push_back({currentX, currentY});
+  unexplored.clear();
 }
 
 Action Agent::GetAction(Percept p) {
@@ -23,23 +24,29 @@ Action Agent::GetAction(Percept p) {
 
     std::cout << "agent pos: " << currentX << " , " << currentY << std::endl;
     std::cout << "current direction: " << (Heading)facing << std::endl;
-
+    std::cout<<"stuckOnSameSpotCount: "<< stuckOnSameSpotCount<<std::endl;
+    std::cout << "agent state: " << (AgentState)agentState << std::endl;
     if (p.bump) {
         std::cout << "bump " << std::endl;
         return TurnRightOnHitWall();
     }
 
     if (p.home) {
-        if (isReturningToBase) {
+        if (agentState == AgentState::ReturnToBase) {
             return SHUTOFF;
         }
     }
+
+
 
     return Move();
 }
 
 Action Agent::Move() {
-    if (isReturningToBase) {
+    if (agentState == AgentState::GoToUnexplored) {
+        return GoToUnexplored();
+    }
+    else if (agentState == AgentState::ReturnToBase) {
         return Backtrack();
     }
     else {
@@ -47,7 +54,17 @@ Action Agent::Move() {
     }
 }
 
+Action Agent::GoToUnexplored()
+{
+  return Backtrack();
+    
+}
+
 Action Agent::Backtrack() {
+    if(agentPositionHistory.size() <= 0)
+    {
+        return NOOP;
+    }
     Position prevPos = agentPositionHistory.back();
     if (prevPos.x == currentX && prevPos.y == currentY) {
         agentPositionHistory.pop_back();
@@ -103,31 +120,47 @@ Action Agent::Backtrack() {
 Action Agent::MoveForward() {
     switch (facing) {
     case NORTH:
-        if (IsVisisted(currentX, currentY + 1)) {
+        if (IsVisited(currentX, currentY + 1) || IsWall(currentX, currentY + 1)) {
+            stuckOnSameSpotCount++;
+            if (stuckOnSameSpotCount >= 4) {
+                CheckWhatToDoNext();
+            }
             return TurnRight();
         }
         currentY++;
         break;
     case EAST:
-        if (IsVisisted(currentX + 1, currentY)) {
+        if (IsVisited(currentX + 1, currentY)|| IsWall(currentX + 1, currentY)) {
+          stuckOnSameSpotCount++;
+            if (stuckOnSameSpotCount >= 4) {
+                CheckWhatToDoNext();
+            }
             return TurnRight();
         }
         currentX++;
         break;
     case SOUTH:
-        if (IsVisisted(currentX, currentY - 1)) {
+        if (IsVisited(currentX, currentY - 1)|| IsWall(currentX, currentY - 1)) {
+          stuckOnSameSpotCount++;
+            if (stuckOnSameSpotCount >= 4) {
+                CheckWhatToDoNext();
+            }
             return TurnRight();
         }
         currentY--;
         break;
     case WEST:
-        if (IsVisisted(currentX - 1, currentY)) {
+        if (IsVisited(currentX - 1, currentY)|| IsWall(currentX - 1, currentY)) {
+          stuckOnSameSpotCount++;
+            if (stuckOnSameSpotCount >= 4) {
+                CheckWhatToDoNext();
+            }
             return TurnRight();
         }
         currentX--;
         break;
     }
-
+    stuckOnSameSpotCount = 0;
     agentPositionHistory.push_back({currentX, currentY});
     actionHistory.push(FORWARD);
     return FORWARD;
@@ -137,8 +170,6 @@ void Agent::printHistoryDebug() {
     for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
         std::cout << "x = " << it->x << ", y = " << it->y << std::endl;
     }
-
-    CalculateBoundary();
 }
 
 Action Agent::TurnRight() {
@@ -212,18 +243,23 @@ Action Agent::TurnRightOnHitWall() {
     return TurnRight();
 }
 
-bool Agent::IsVisisted(int x, int y) {
+bool Agent::IsVisited(int x, int y) {
     for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
         if (it->x == x && it->y == y) {
-            stuckOnSameSpotCount++;
-            if (stuckOnSameSpotCount >= 4) {
-                isReturningToBase = true;
-                printHistoryDebug();
-            }
             return true;
         }
     }
-    stuckOnSameSpotCount = 0;
+    return false;
+}
+
+bool Agent::IsWall(int x, int y)
+{
+      for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it) {
+        if (it->x == x && it->y == y) {
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -257,12 +293,10 @@ void Agent::CalculateBoundary() {
             yWallMaxBoundary = it->y;
         }
     }
-
-    FindUnexploredCoordinates();
 }
 
 void Agent::FindUnexploredCoordinates() {
-    std::list<Position> unexplored;
+unexplored.clear();
 
     // Iterate through all positions within the agent boundary
     for (int x = xMinBoundary; x <= xMaxBoundary; ++x) {
@@ -271,16 +305,24 @@ void Agent::FindUnexploredCoordinates() {
             bool isVisited = false;
             bool isWall = false;
 
-            for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
+            if(agentPositionHistory.size() > 0 )
+            {
+                for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
                 if (it->x == x && it->y == y) {
                     isVisited = true;
                 }
+                }
             }
-            for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it) {
+
+            if(wallPositions.size() > 0 )
+            {
+                for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it) {
                 if (it->x == x && it->y == y) {
                     isWall = true;
                 }
             }
+            }
+
 
             if (!isVisited && !isWall) {
                 unexplored.push_back(current);
@@ -292,4 +334,24 @@ void Agent::FindUnexploredCoordinates() {
     for (const auto& pos : unexplored) {
         std::cout << "(" << pos.x << ", " << pos.y << ")\n";
     }
+}
+
+bool Agent::IsThereUnexploredCoordinates()
+{
+  CalculateBoundary();
+  FindUnexploredCoordinates();
+
+  return unexplored.size()>0;
+}
+
+void Agent::CheckWhatToDoNext()
+{
+  if(IsThereUnexploredCoordinates())
+  {
+    agentState = AgentState::GoToUnexplored;
+  }else 
+  {
+    agentState = AgentState::ReturnToBase;
+  }
+  
 }

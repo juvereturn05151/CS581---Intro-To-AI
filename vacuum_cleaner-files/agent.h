@@ -12,6 +12,13 @@ struct Position
   int y;
 };
 
+enum AgentState
+{
+  BlindlyMove,
+  GoToUnexplored,
+  ReturnToBase
+};
+
 
 class Agent {
   public:
@@ -21,7 +28,7 @@ class Agent {
     Heading facing;
     int currentX;
     int currentY;
-    bool isReturningToBase;
+    AgentState agentState;
     int stuckOnSameSpotCount;
     bool startTurning180degree;
     int turning90degreeCounter;
@@ -30,6 +37,7 @@ class Agent {
     std::list<Position> agentPositionHistory; 
     std::list<Position> wallPositions; 
     std::stack<Action> actionHistory; 
+    std::list<Position> unexplored;
     Action lastestAction;
     float xMinBoundary = 0;
     float xMaxBoundary = 0;
@@ -46,10 +54,14 @@ class Agent {
     Action TurnRight();
     Action TurnRightWithoutHistory();
     Action TurnRightOnHitWall();
-    bool IsVisisted(int x, int y);
+    Action GoToUnexplored();
+    bool IsVisited(int x, int y);
+    bool IsWall(int x, int y);
+    bool IsThereUnexploredCoordinates();
     void printHistoryDebug();
     void CalculateBoundary();
     void FindUnexploredCoordinates();
+    void CheckWhatToDoNext();
 };
 
 #endif
