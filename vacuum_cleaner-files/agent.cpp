@@ -13,84 +13,98 @@ Agent::Agent(int random_seed) : x(0), y(0), direction(NORTH), homeX(0), homeY(0)
   visited.insert({x, y}); // Mark home as visited
 } 
 
-Action Agent::GetAction(Percept p) {
-    if (isCleaning) {
-        if (p.dirt) {
-            return SUCK;
-        }
+Action Agent::GetAction(Percept p) 
+{
+    if (p.dirt) 
+    {
+        return SUCK;
+    }
 
-        if (p.bump) {
-            // If there's a wall in front, turn to explore another direction
-            turnLeft();
-            return LEFT;
-        }
+    if (p.bump) 
+    {
+        // If there's a wall in front, turn to explore another direction
+        onHitWall();
+        turnLeft();
+        return LEFT;
+    }
 
-        if (hasUnexploredNeighbor()) {
-            // Move to an unexplored neighbor
-            printf("Exploring unexplored neighbor.\n");
-            return moveToUnexplored();
-        } else {
-            // If no unexplored neighbors exist, start backtracking
-            printf("No unexplored neighbors. Switching to backtracking mode.\n");
-            isCleaning = false; // Switch to backtracking mode
-            return backtrackToHome();
-        }
-    } else {
-        // Backtrack and check for unexplored neighbors
-        if (hasUnexploredNeighbor()) {
-            // Resume exploration if an unexplored neighbor is found
-            printf("Found unexplored neighbor while backtracking. Resuming exploration.\n");
-            isCleaning = true; // Switch back to cleaning mode
-            return moveToUnexplored();
-        } else {
-            return backtrackToHome();
-        }
+    if (hasUnexploredNeighbor()) 
+    {
+        // Move to an unexplored neighbor
+        printf("Exploring unexplored neighbor.\n");
+        return moveToUnexplored();
+    } 
+    else if(!hasWallInfront())
+    {
+        return moveForwardAvoidingWalls();
+    } 
+    else
+    {
+        // If no unexplored neighbors exist, start backtracking
+        printf("No unexplored neighbors. Switching to backtracking mode.\n");
+        return backtrackToHome();
     }
 }
-void Agent::moveForward(bool bump) {
+void Agent::moveForward() {
     // Only update position if there is no bump
-    if (!bump) {
-        // Record the current position before moving
-        pathStack.push({x, y});
+    std::cout<< "After: x: " << x << "y: "<<y <<std::endl;
+    // Record the current position before moving
+    pathStack.push({x, y});
 
-        // Move forward based on the current direction
-        switch (direction) {
-            case NORTH: y++; break;
-            case EAST:  x++; break;
-            case SOUTH: y--; break;
-            case WEST:  x--; break;
-        }
+    // Move forward based on the current direction
+    switch (direction) {
+        case NORTH: y++; break;
+        case EAST:  x++; break;
+        case SOUTH: y--; break;
+        case WEST:  x--; break;
+    }
 
-        // Mark the new position as visited
-        visited.insert({x, y});
+    // Mark the new position as visited
+    visited.insert({x, y});
+    std::cout<< "After: x: " << x << "y: "<<y <<std::endl;
+}
+
+void Agent::onHitWall()
+{
+    wallPos.insert({x, y});
+    switch (direction) {
+        case NORTH: y--; break;
+        case EAST:  x--; break;
+        case SOUTH: y++; break;
+        case WEST:  x++; break;
     }
 }
 
-    void Agent::turnLeft() {
-        direction = static_cast<Heading>((direction + 3) % 4);
-    }
+void Agent::turnLeft() 
+{
+    direction = static_cast<Heading>((direction + 3) % 4);
+}
 
-    void Agent::turnRight() {
-        direction = static_cast<Heading>((direction + 1) % 4);
-    }
+void Agent::turnRight() 
+{
+    direction = static_cast<Heading>((direction + 1) % 4);
+}
 
 Action Agent::backtrackToHome() {
     printf("Backtracking...\n");
-
+    std::cout<<"x: "<<x<<"y: "<<y<<std::endl;
     // If the agent is back at home, shut off
-    if (x == homeX && y == homeY) {
+    if (x == homeX && y == homeY) 
+    {
         printf("Returning home. Shutting off.\n");
         return SHUTOFF;
     }
 
-    if (!pathStack.empty()) {
+    if (!pathStack.empty()) 
+    {
         // Get the next target position from the stack
         Position target = pathStack.top();
+        printf("pathStack.top().%i %i\n",target.x,target.y);
 
         // Determine the direction to face toward the target
         if (x < target.x) { // Target is to the EAST
             if (direction != EAST) {
-                turnTo(EAST);
+                turnRight();
                 return RIGHT;
             } else {
                 pathStack.pop(); // Move toward the target, then pop it
@@ -99,7 +113,7 @@ Action Agent::backtrackToHome() {
             }
         } else if (x > target.x) { // Target is to the WEST
             if (direction != WEST) {
-                turnTo(WEST);
+                turnRight();
                 return RIGHT;
             } else {
                 pathStack.pop();
@@ -108,7 +122,7 @@ Action Agent::backtrackToHome() {
             }
         } else if (y < target.y) { // Target is to the NORTH
             if (direction != NORTH) {
-                turnTo(NORTH);
+                turnRight();
                 return RIGHT;
             } else {
                 pathStack.pop();
@@ -117,7 +131,7 @@ Action Agent::backtrackToHome() {
             }
         } else if (y > target.y) { // Target is to the SOUTH
             if (direction != SOUTH) {
-                turnTo(SOUTH);
+                turnRight();
                 return RIGHT;
             } else {
                 pathStack.pop();
@@ -127,8 +141,8 @@ Action Agent::backtrackToHome() {
         }
     }
 
-    // If for some reason the pathStack is empty, shut off as a fallback
-    return SHUTOFF;
+    turnRight();
+    return RIGHT;
 }
 
 
@@ -145,21 +159,100 @@ bool Agent::hasUnexploredNeighbor() {
 }
 
 Action Agent::moveToUnexplored() {
+    std::cout<<"direction: " << direction <<std::endl;
     // Check and move to an unexplored direction
     if (!visited.count({x, y - 1}) && direction == SOUTH) {
-        moveForward(false); // No bump in this case
+
+        moveForward(); // No bump in this case
         return FORWARD;
     } else if (!visited.count({x + 1, y}) && direction == EAST) {
-        moveForward(false);
+        moveForward();
         return FORWARD;
     } else if (!visited.count({x, y + 1}) && direction == NORTH) {
-        moveForward(false);
+        moveForward();
         return FORWARD;
     } else if (!visited.count({x - 1, y}) && direction == WEST) {
-        moveForward(false);
+        moveForward();
         return FORWARD;
     } else {
-        turnLeft(); // Rotate to find an unexplored direction
+        // to find an unexplored direction
+        turnLeft();
         return LEFT;
     }
+}
+
+bool Agent::hasWallInfront()
+{
+    Position nextPosition;
+    switch (direction) {
+        case NORTH: nextPosition = {x, y + 1}; break;
+        case EAST:  nextPosition = {x + 1, y}; break;
+        case SOUTH: nextPosition = {x, y - 1}; break;
+        case WEST:  nextPosition = {x - 1, y}; break;
+    }
+
+    return wallPos.count(nextPosition);
+}
+
+Action Agent::moveForwardAvoidingWalls() {
+    // If the next position is not a wall, move forward
+    if (!hasWallInfront()) {
+        // Record the current position before moving
+        pathStack.push({x, y});
+
+        // Move forward based on the current direction
+        switch (direction) {
+            case NORTH: y++; break;
+            case EAST:  x++; break;
+            case SOUTH: y--; break;
+            case WEST:  x--; break;
+        }
+
+        // Mark the new position as visited
+        visited.insert({x, y});
+        std::cout << "Moved to x: " << x << ", y: " << y << std::endl;
+        return FORWARD;
+    } else {
+        // If there's a wall, turn to explore another direction
+        std::cout << "Hit a wall, turning left.\n";
+        turnLeft();
+        return LEFT;
+    }
+}
+
+Action Agent::navigateToHome() {
+    // Check if already at home
+    if (x == homeX && y == homeY) {
+        printf("Already at home. Shutting off.\n");
+        return SHUTOFF;
+    }
+
+    // Move towards home while avoiding walls
+    Position nextPosition;
+
+    if (x < homeX && !wallPos.count({x + 1, y})) { // Move EAST
+        while (direction != EAST) turnRight();
+        nextPosition = {x + 1, y};
+    } else if (x > homeX && !wallPos.count({x - 1, y})) { // Move WEST
+        while (direction != WEST) turnRight();
+        nextPosition = {x - 1, y};
+    } else if (y < homeY && !wallPos.count({x, y + 1})) { // Move NORTH
+        while (direction != NORTH) turnRight();
+        nextPosition = {x, y + 1};
+    } else if (y > homeY && !wallPos.count({x, y - 1})) { // Move SOUTH
+        while (direction != SOUTH) turnRight();
+        nextPosition = {x, y - 1};
+    } else {
+        // If no clear path, turn left to explore
+        turnLeft();
+        printf("No clear path, turning left to explore.\n");
+        return LEFT;
+    }
+
+    // Move to the next position and mark as visited
+    x = nextPosition.x;
+    y = nextPosition.y;
+    visited.insert(nextPosition);
+    printf("Moved to x: %d, y: %d\n", x, y);
+    return FORWARD;
 }

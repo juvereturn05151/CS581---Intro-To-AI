@@ -28,10 +28,11 @@ class Agent {
     Heading direction;             
     bool isCleaning;                 
     std::set<Position> visited;      
+    std::set<Position> wallPos;      
     std::stack<Position> pathStack;  
 
 
-    void moveForward(bool bump);
+    void moveForward();
 
     void turnLeft();
 
@@ -43,7 +44,15 @@ class Agent {
 
     bool hasUnexploredNeighbor();
 
+    bool hasWallInfront();
+
     Action moveToUnexplored();
+
+    void onHitWall();
+
+    Action moveForwardAvoidingWalls();
+
+    Action navigateToHome();
 
 };
 
