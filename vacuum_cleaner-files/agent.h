@@ -23,9 +23,11 @@ class Agent {
     Agent(int random_seed);
     Action GetAction(Percept p);
   private: 
-    int x, y;                        
+    int x, y;   
+    Heading direction;                        
     int homeX, homeY;               
-    Heading direction;                           
+    bool startFakeBacktracking;
+    Position revisitPosition;                       
     std::set<Position> visited;      
     std::set<Position> wallPos;      
     std::stack<Position> pathStack;  
@@ -54,6 +56,10 @@ class Agent {
     Action navigateToHome();
 
    void debugPathStack();
+
+   Action fakeBacktrack();
+
+   bool shouldBacktrackToHome();
 
 };
 

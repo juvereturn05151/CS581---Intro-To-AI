@@ -9,6 +9,7 @@ Agent::Agent(int random_seed) : x(0), y(0), direction(NORTH), homeX(0), homeY(0)
   if (random_seed==0) std::srand( static_cast<unsigned>(std::time(0))); // random seed from time
   else                std::srand( random_seed ); // random seed from user
 
+startFakeBacktracking = false;
   visited.insert({x, y}); // Mark home as visited
 } 
 
@@ -29,6 +30,18 @@ Action Agent::GetAction(Percept p)
         return LEFT;
     }
 
+    if (shouldBacktrackToHome()) {
+        printf("All paths explored. Backtracking to home.");
+        return backtrackToHome();
+    }
+
+    if(startFakeBacktracking)
+    {
+        printf("startFakeBacktracking x:");
+        std::cout<<revisitPosition.x<<" y:"<<revisitPosition.y<<std::endl;
+        return fakeBacktrack();
+    }
+
     if (hasUnexploredNeighbor()) 
     {
         // Move to an unexplored neighbor
@@ -47,10 +60,16 @@ Action Agent::GetAction(Percept p)
         return backtrackToHome();
     }
 }
+
+bool Agent::shouldBacktrackToHome() {
+    return visited.size() > 1 && !hasUnexploredNeighbor();
+}
+
 void Agent::moveForward() {
     // Only update position if there is no bump
     std::cout<< "After: x: " << x << "y: "<<y <<std::endl;
     // Record the current position before moving
+
     pathStack.push({x, y});
 
     // Move forward based on the current direction
@@ -59,6 +78,16 @@ void Agent::moveForward() {
         case EAST:  x++; break;
         case SOUTH: y--; break;
         case WEST:  x--; break;
+    }
+
+    Position target = {x,y};
+
+    // Fake backtracking: If revisiting a position we've been to, we simulate backtracking
+    if ((visited.count(target) && !(target.x == 0 && target.y == 0))) {
+        printf("Revisiting position: (%d, %d). Simulating backtracking.\n", target.x, target.y);
+        startFakeBacktracking = true;
+        revisitPosition = target;
+        pathStack.pop();
     }
 
     // Mark the new position as visited
@@ -143,11 +172,74 @@ Action Agent::backtrackToHome() {
             }
         }
     }
-        printf("pathStack.top(). Empty");
+    printf("pathStack.top(). Empty");
     turnRight();
     return RIGHT;
 }
 
+Action Agent::fakeBacktrack()
+{
+    printf("Fake Backtracking...\n");
+    std::cout<<"x: "<<x<<"y: "<<y<<std::endl;
+    Position target = pathStack.top();
+    if(target.x != revisitPosition.x && target.y != revisitPosition.y)
+    {
+        if (!pathStack.empty()) 
+        {
+            // Get the next target position from the stack
+            Position target = pathStack.top();
+            printf("pathStack.top().%i %i\n",target.x,target.y);
+
+            // Determine the direction to face toward the target
+            if (x < target.x) { // Target is to the EAST
+                if (direction != EAST) {
+                    turnRight();
+                    return RIGHT;
+                } else {
+                    pathStack.pop(); // Move toward the target, then pop it
+                    x++;
+                    return FORWARD;
+                }
+            } else if (x > target.x) { // Target is to the WEST
+                if (direction != WEST) {
+                    turnRight();
+                    return RIGHT;
+                } else {
+                    pathStack.pop();
+                    x--;
+                    return FORWARD;
+                }
+            } else if (y < target.y) { // Target is to the NORTH
+                if (direction != NORTH) {
+                    turnRight();
+                    return RIGHT;
+                } else {
+                    pathStack.pop();
+                    y++;
+                    return FORWARD;
+                }
+            } else if (y > target.y) { // Target is to the SOUTH
+                if (direction != SOUTH) {
+                    turnRight();
+                    return RIGHT;
+                } else {
+                    pathStack.pop();
+                    y--;
+                    return FORWARD;
+                }
+            }
+        }
+    }else
+    {
+        startFakeBacktracking = false;
+        return NOOP;
+    }
+
+
+    printf("pathStack.top(). Empty");
+    turnRight();
+    return RIGHT;
+}
 
 void  Agent::turnTo(Heading targetDirection) {
   while (direction != targetDirection) {
@@ -209,6 +301,16 @@ Action Agent::moveForwardAvoidingWalls() {
             case EAST:  x++; break;
             case SOUTH: y--; break;
             case WEST:  x--; break;
+        }
+
+        Position target = {x,y};
+
+        // Fake backtracking: If revisiting a position we've been to, we simulate backtracking
+        if ((visited.count(target) && !(target.x == 0 && target.y == 0))) {
+            printf("Revisiting position: (%d, %d). Simulating backtracking.\n", target.x, target.y);
+            startFakeBacktracking = true;
+            revisitPosition = target;
+            pathStack.pop();
         }
 
         // Mark the new position as visited
