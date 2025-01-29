@@ -30,19 +30,17 @@ Action Agent::GetAction(Percept p)
 
     if (hasUnexploredNeighbor()) 
     {
-        isCleaning = true;
         // Move to an unexplored neighbor
         printf("Exploring unexplored neighbor.\n");
         return moveToUnexplored();
     } 
-    else if(!hasWallInfront() && isCleaning)
+    else if(!hasWallInfront())
     {
         printf("moveForwardAvoidingWalls\n");
         return moveForwardAvoidingWalls();
     } 
     else
     {
-        isCleaning = false;
         // If no unexplored neighbors exist, start backtracking
         printf("No unexplored neighbors. Switching to backtracking mode.\n");
         return backtrackToHome();

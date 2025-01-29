@@ -25,8 +25,7 @@ class Agent {
   private: 
     int x, y;                        
     int homeX, homeY;               
-    Heading direction;             
-    bool isCleaning;                 
+    Heading direction;                           
     std::set<Position> visited;      
     std::set<Position> wallPos;      
     std::stack<Position> pathStack;  
