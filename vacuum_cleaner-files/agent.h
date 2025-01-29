@@ -31,35 +31,21 @@ class Agent {
     std::set<Position> visited;      
     std::set<Position> wallPos;      
     std::stack<Position> pathStack;  
-
-
+    
     void moveForward();
-
     void turnLeft();
-
     void turnRight();
-
     Action backtrackToHome();
-
     void turnTo(Heading targetDirection);
-
     bool hasUnexploredNeighbor();
-
     bool hasWallInfront();
-
     Action moveToUnexplored();
-
     void onHitWall();
-
     Action moveForwardAvoidingWalls();
-
     Action navigateToHome();
-
-   void debugPathStack();
-
-   Action fakeBacktrack();
-
-   bool shouldBacktrackToHome();
+    void debugPathStack();
+    Action fakeBacktrack();
+    bool shouldBacktrackToHome();
 
 };
 
