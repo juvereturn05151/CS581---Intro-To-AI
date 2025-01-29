@@ -3,7 +3,7 @@
 #include "agent.h"
 #include <iostream>
 
-Agent::Agent(int random_seed) : x(0), y(0), direction(NORTH), homeX(0), homeY(0), isCleaning(true)  { 
+Agent::Agent(int random_seed) : x(0), y(0), direction(NORTH), homeX(0), homeY(0)  { 
   //supplying your own seed may help debugging, same seed will cause 
   //same random number sequence 
   if (random_seed==0) std::srand( static_cast<unsigned>(std::time(0))); // random seed from time
@@ -15,6 +15,8 @@ Agent::Agent(int random_seed) : x(0), y(0), direction(NORTH), homeX(0), homeY(0)
 
 Action Agent::GetAction(Percept p) 
 {
+    writeInformation();
+
     if (p.dirt) 
     {
         return SUCK;
@@ -257,3 +259,51 @@ Action Agent::navigateToHome() {
     printf("Moved to x: %d, y: %d\n", x, y);
     return FORWARD;
 }
+
+void Agent::writeInformation() {
+        std::cout << "Agent Information:\n";
+        std::cout << "Current Position: (" << x << ", " << y << ")\n";
+        std::cout << "Home Position: (" << homeX << ", " << homeY << ")\n";
+
+        std::cout << "Direction: ";
+        switch (direction) {
+            case Heading::NORTH : std::cout << "North"; break;
+            case Heading::SOUTH: std::cout << "South"; break;
+            case Heading::EAST:  std::cout << "East"; break;
+            case Heading::WEST:  std::cout << "West"; break;
+        }
+        std::cout << "\n";
+
+        std::cout << "Visited Positions: ";
+        if (visited.empty()) {
+            std::cout << "None\n";
+        } else {
+            for (const auto& pos : visited) {
+                std::cout << "(" << pos.x << ", " << pos.y << ") ";
+            }
+            std::cout << "\n";
+        }
+
+        std::cout << "Wall Positions: ";
+        if (wallPos.empty()) {
+            std::cout << "None\n";
+        } else {
+            for (const auto& pos : wallPos) {
+                std::cout << "(" << pos.x << ", " << pos.y << ") ";
+            }
+            std::cout << "\n";
+        }
+
+        std::cout << "Path Stack: ";
+        if (pathStack.empty()) {
+            std::cout << "Empty\n";
+        } else {
+            std::stack<Position> tempStack = pathStack;  // Copy to avoid modifying original stack
+            while (!tempStack.empty()) {
+                Position pos = tempStack.top();
+                std::cout << "(" << pos.x << ", " << pos.y << ") ";
+                tempStack.pop();
+            }
+            std::cout << "\n";
+        }
+    }

@@ -53,6 +53,8 @@ class Agent {
 
     Action navigateToHome();
 
+    void writeInformation();
+
 };
 
 #endif
