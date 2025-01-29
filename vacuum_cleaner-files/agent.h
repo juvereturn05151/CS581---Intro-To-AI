@@ -53,7 +53,7 @@ class Agent {
 
     Action navigateToHome();
 
-    void writeInformation();
+   void debugPathStack();
 
 };
 
