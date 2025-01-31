@@ -11,11 +11,22 @@ move through the maps until it no longer finds the unexplored path, then return
 #include <iostream>
 #include <set>
 #include <stack>
+#include<tuple>
 
 //For storing position
 struct Position
 {
     int x, y;
+
+    bool operator<(const Position& other) const 
+    {
+        return std::tie(x, y) < std::tie(other.x, other.y);
+    }
+
+    bool operator==(const Position& other) const 
+    {
+        return x == other.x && y == other.y;
+    }
 };
 
 class Agent 
@@ -26,9 +37,11 @@ class Agent
   private: 
     int x, y;   
     Heading direction;                        
-    int homeX, homeY;               
-    bool startFakeBacktracking;
-    Position revisitPosition;                       
+    int homeX, homeY;
+                   
+    bool isPreBacktracking;
+    Position revisitPosition;
+
     std::set<Position> visited;      
     std::set<Position> wallPos;      
     std::stack<Position> pathStack;  
@@ -38,15 +51,20 @@ class Agent
     void turnRight();
     void onHitWall();
     void debugPathStack();
+    //prebacktrack is special backtrack when the agent visits the same position
+    //the purpose is to delete duplicated paths in the pathStack
+    //if not doing this, it can cause infinite loop
+    void setPrebacktrack(Position target);
 
     Action moveToUnexplored();
     Action moveForwardAvoidingWalls();
     Action backtrackToHome();
-    Action fakeBacktrack();
+    Action preBacktrack();
 
     bool hasUnexploredNeighbor();
     bool hasWallInfront();
     bool shouldBacktrackToHome();
+    bool isVisitTheSamePosition(Position target);
 
 };
 
