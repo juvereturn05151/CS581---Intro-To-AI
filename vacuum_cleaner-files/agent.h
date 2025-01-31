@@ -1,24 +1,25 @@
+/*
+Author: Ju-ve Chankasemporn
+E-mail: juvereturn@gmail.com
+Brief: Vacuum cleaner agent that stores path as information
+move through the maps until it no longer finds the unexplored path, then return
+*/
+
 #ifndef AGENT_H
 #define AGENT_H
 #include "definitions.h"
 #include <iostream>
 #include <set>
 #include <stack>
-#include <tuple>
 
-struct Position {
+//For storing position
+struct Position
+{
     int x, y;
-
-    bool operator<(const Position& other) const {
-        return std::tie(x, y) < std::tie(other.x, other.y);
-    }
-
-    bool operator==(const Position& other) const {
-        return x == other.x && y == other.y;
-    }
 };
 
-class Agent {
+class Agent 
+{
   public:
     Agent(int random_seed);
     Action GetAction(Percept p);
@@ -35,16 +36,16 @@ class Agent {
     void moveForward();
     void turnLeft();
     void turnRight();
+    void onHitWall();
+    void debugPathStack();
+
+    Action moveToUnexplored();
+    Action moveForwardAvoidingWalls();
     Action backtrackToHome();
-    void turnTo(Heading targetDirection);
+    Action fakeBacktrack();
+
     bool hasUnexploredNeighbor();
     bool hasWallInfront();
-    Action moveToUnexplored();
-    void onHitWall();
-    Action moveForwardAvoidingWalls();
-    Action navigateToHome();
-    void debugPathStack();
-    Action fakeBacktrack();
     bool shouldBacktrackToHome();
 
 };
