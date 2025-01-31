@@ -31,30 +31,24 @@ Action Agent::GetAction(Percept p)
 
     if (shouldBacktrackToHome()) 
     {
-        printf("All paths explored. Backtracking to home.");
         return backtrackToHome();
     }
 
     if(isPreBacktracking)
     {
-        printf("isPreBacktracking x:");
-        std::cout<<revisitPosition.x<<" y:"<<revisitPosition.y<<std::endl;
         return preBacktrack();
     }
 
     if (hasUnexploredNeighbor()) 
     {
-        printf("Exploring unexplored neighbor.\n");
         return moveToUnexplored();
     } 
     else if(!hasWallInfront())
     {
-        printf("moveForwardAvoidingWalls\n");
         return moveForwardAvoidingWalls();
     } 
     else
     {
-        printf("No unexplored neighbors. Switching to backtracking mode.\n");
         return backtrackToHome();
     }
 }
@@ -182,24 +176,19 @@ Action Agent::moveForwardAvoidingWalls()
 
         //mark the new position as visited
         visited.insert({x, y});
-        std::cout << "Moved to x: " << x << ", y: " << y << std::endl;
         return FORWARD;
     } 
     else
     {
         //if there is a wall, turn to explore another direction
-        std::cout << "Hit a wall, turning left.\n";
         turnLeft();
         return LEFT;
     }
 }
 
 Action Agent::backtrackToHome() {
-    printf("Backtracking...\n");
-    std::cout<<"x: "<<x<<"y: "<<y<<std::endl;
     if (x == homeX && y == homeY) 
     {
-        printf("Returning home. Shutting off.\n");
         return SHUTOFF;
     }
 
@@ -207,7 +196,6 @@ Action Agent::backtrackToHome() {
     {
         //get the next target position from the stack
         Position target = pathStack.top();
-        printf("pathStack.top().%i %i\n",target.x,target.y);
 
         //determine the direction to face toward the target
         if (x < target.x) 
@@ -265,7 +253,7 @@ Action Agent::backtrackToHome() {
             }
         }
     }
-    printf("pathStack.top(). Empty");
+
     turnRight();
     return RIGHT;
 }
