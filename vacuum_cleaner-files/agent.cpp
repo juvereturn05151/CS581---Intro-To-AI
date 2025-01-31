@@ -29,7 +29,8 @@ Action Agent::GetAction(Percept p)
         return LEFT;
     }
 
-    if (shouldBacktrackToHome()) {
+    if (shouldBacktrackToHome()) 
+    {
         printf("All paths explored. Backtracking to home.");
         return backtrackToHome();
     }
