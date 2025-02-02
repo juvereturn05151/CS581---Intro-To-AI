@@ -1,69 +1,71 @@
+/*
+Author: Ju-ve Chankasemporn
+E-mail: juvereturn@gmail.com
+Brief: Vacuum cleaner agent that stores path as information
+move through the maps until it no longer finds the unexplored path, then return
+*/
+
 #ifndef AGENT_H
 #define AGENT_H
 #include "definitions.h"
-#include <utility>
-#include <list>
-#include <stack>
+#include <iostream>
 #include <set>
+#include <stack>
+#include<tuple>
 
+//For storing position
 struct Position
 {
-  int x;
-  int y;
+    int x, y;
+
+    bool operator<(const Position& other) const 
+    {
+        return std::tie(x, y) < std::tie(other.x, other.y);
+    }
+
+    bool operator==(const Position& other) const 
+    {
+        return x == other.x && y == other.y;
+    }
 };
 
-enum AgentState
+class Agent 
 {
-  BlindlyMove,
-  GoToUnexplored,
-  ReturnToBase
-};
-
-
-class Agent {
   public:
     Agent(int random_seed);
     Action GetAction(Percept p);
   private: 
-    Heading facing;
-    int currentX;
-    int currentY;
-    AgentState agentState;
-    int stuckOnSameSpotCount;
-    bool startTurning180degree;
-    int turning90degreeCounter;
-    bool hasTurn180degree;
-    bool firstMove;
-    std::list<Position> agentPositionHistory; 
-        std::list<Position> notdeleteAgentPositionHistory; 
-    std::list<Position> wallPositions; 
-    std::stack<Action> actionHistory; 
-    std::list<Position> unexplored;
-    Action lastestAction;
-    float xMinBoundary = 0;
-    float xMaxBoundary = 0;
-    float yMinBoundary = 0;
-    float yMaxBoundary = 0;
-    float xWallMinBoundary = 0;
-    float xWallMaxBoundary = 0;
-    float yWallMinBoundary = 0;
-    float yWallMaxBoundary = 0;
-    Position lastTurnPos;
+    int x, y;   
+    Heading direction;                        
+    int homeX, homeY;
+                   
+    bool isPreBacktracking;
+    Position revisitPosition;
 
-    Action Move();
-    Action MoveForward();
-    Action Backtrack();
-    Action TurnRight();
-    Action TurnRightWithoutHistory();
-    Action TurnRightOnHitWall();
-    Action GoToUnexplored();
-    bool IsVisited(int x, int y);
-    bool IsWall(int x, int y);
-    bool IsThereUnexploredCoordinates();
-    void printHistoryDebug();
-    void CalculateBoundary();
-    void FindUnexploredCoordinates();
-    void CheckWhatToDoNext();
+    std::set<Position> visited;      
+    std::set<Position> wallPos;      
+    std::stack<Position> pathStack;  
+    
+    void moveForward();
+    void turnLeft();
+    void turnRight();
+    void onHitWall();
+    void debugPathStack();
+    //prebacktrack is special backtrack when the agent visits the same position
+    //the purpose is to delete duplicated paths in the pathStack
+    //if not doing this, it can cause infinite loop
+    void setPrebacktrack(Position target);
+
+    Action moveToUnexplored();
+    Action moveForwardAvoidingWalls();
+    Action backtrackToHome();
+    Action preBacktrack();
+
+    bool hasUnexploredNeighbor();
+    bool hasWallInfront();
+    bool shouldBacktrackToHome();
+    bool isVisitTheSamePosition(Position target);
+
 };
 
 #endif

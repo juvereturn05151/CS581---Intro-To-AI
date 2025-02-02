@@ -1,423 +1,358 @@
 #include <ctime> //for random seed
-#include <cmath>
+#include <cmath> 
 #include "agent.h"
 #include <iostream>
 
-Agent::Agent(int random_seed) : facing(NORTH), currentX(0), currentY(0), agentState(BlindlyMove), stuckOnSameSpotCount(0)
-,startTurning180degree(false), turning90degreeCounter(0), hasTurn180degree(false), firstMove(true), lastTurnPos{0,0}
+Agent::Agent(int random_seed) : x(0), y(0), direction(NORTH), homeX(0), homeY(0)  { 
+  //supplying your own seed may help debugging, same seed will cause 
+  //same random number sequence 
+  if (random_seed==0) std::srand( static_cast<unsigned>(std::time(0))); // random seed from time
+  else                std::srand( random_seed ); // random seed from user
+
+  isPreBacktracking = false;
+  visited.insert({x, y});
+} 
+
+Action Agent::GetAction(Percept p) 
 {
-  // supplying your own seed may help debugging, same seed will cause
-  // same random number sequence
-  if (random_seed == 0)
-    std::srand(static_cast<unsigned>(std::time(0))); // random seed from time
-  else
-    std::srand(random_seed); // random seed from user
+    debugPathStack();
 
-  agentPositionHistory.push_back({currentX, currentY});
-  notdeleteAgentPositionHistory.push_back({currentX, currentY});
-  unexplored.clear();
-}
-
-Action Agent::GetAction(Percept p) {
-    if (p.dirt) {
+    if (p.dirt) 
+    {
         return SUCK;
     }
-    std::cout<<"before stuckOnSameSpotCount: "<< stuckOnSameSpotCount<<std::endl;
-    if(currentX == lastTurnPos.x  &&  lastTurnPos.y == currentY)
-    {
-        stuckOnSameSpotCount++;
-        if( stuckOnSameSpotCount >= 4)
-        {
-            if(agentState == AgentState::BlindlyMove)
-            {
-                CheckWhatToDoNext();
-            }
-            else if(agentState == AgentState::GoToUnexplored)
-            {
-                agentState = AgentState::ReturnToBase;
 
-            }
-        }
+    if (p.bump) 
+    {
+        onHitWall();
+        turnLeft();
+        return LEFT;
     }
+
+    if (shouldBacktrackToHome()) 
+    {
+        return backtrackToHome();
+    }
+
+    if(isPreBacktracking)
+    {
+        return preBacktrack();
+    }
+
+    if (hasUnexploredNeighbor()) 
+    {
+        return moveToUnexplored();
+    } 
+    else if(!hasWallInfront())
+    {
+        return moveForwardAvoidingWalls();
+    } 
+    else
+    {
+        return backtrackToHome();
+    }
+}
+
+void Agent::moveForward() 
+{
+    //record the position before moving
+    pathStack.push({x, y});
+
+    //move forward based on the facing direction
+    switch (direction) 
+    {
+        case NORTH: y++; break;
+        case EAST:  x++; break;
+        case SOUTH: y--; break;
+        case WEST:  x--; break;
+    }
+
+    Position target = {x,y};
+    //if visit the same position, set pre-backtrack
+    if (isVisitTheSamePosition(target)) 
+    {
+        setPrebacktrack(target);
+    }
+
+    //mark the new position as visited
+    visited.insert({x, y});
+}
+
+void Agent::onHitWall()
+{
+    wallPos.insert({x, y});
+    pathStack.pop();
+    switch (direction) 
+    {
+        case NORTH: y--; break;
+        case EAST:  x--; break;
+        case SOUTH: y++; break;
+        case WEST:  x++; break;
+    }
+}
+
+void Agent::turnLeft() 
+{
+    direction = static_cast<Heading>((direction + 3) % 4);
+}
+
+void Agent::turnRight() 
+{
+    direction = static_cast<Heading>((direction + 1) % 4);
+}
+
+void Agent::setPrebacktrack(Position target)
+{
+    isPreBacktracking = true;
+    revisitPosition = target;
+    pathStack.pop();
+}
+
+void Agent::debugPathStack() 
+{
+    std::stack<Position> tempStack = pathStack;
+    std::cout << "Current Path Stack: ";
+    while (!tempStack.empty()) 
+    {
+        Position pos = tempStack.top();
+        tempStack.pop();
+        std::cout << "(" << pos.x << ", " << pos.y << ") ";
+    }
+    std::cout << "\n";
+}
+
+Action Agent::moveToUnexplored() 
+{
+    if (!visited.count({x, y - 1}) && direction == SOUTH) 
+    {
+        moveForward(); 
+        return FORWARD;
+    } 
+    else if (!visited.count({x + 1, y}) && direction == EAST) 
+    {
+        moveForward();
+        return FORWARD;
+    } 
+    else if (!visited.count({x, y + 1}) && direction == NORTH) 
+    {
+        moveForward();
+        return FORWARD;
+    } 
+    else if (!visited.count({x - 1, y}) && direction == WEST) 
+    {
+        moveForward();
+        return FORWARD;
+    } 
     else 
     {
-        stuckOnSameSpotCount=0;
-    }
-                printHistoryDebug();
-    lastTurnPos.x = currentX;
-    lastTurnPos.y = currentY;
-
-    std::cout << "agent pos: " << currentX << " , " << currentY << std::endl;
-    std::cout << "current direction: " << (Heading)facing << std::endl;
-    std::cout<<"stuckOnSameSpotCount: "<< stuckOnSameSpotCount<<std::endl;
-    std::cout << "agent state: " << (AgentState)agentState << std::endl;
-    if (p.bump) {
-        std::cout << "bump " << std::endl;
-        return TurnRightOnHitWall();
-    }
-
-    if (p.home) {
-        if (agentState == AgentState::ReturnToBase) {
-            return SHUTOFF;
-        }
-    }
-
-
-
-    return Move();
-}
-
-Action Agent::Move() {
-    if (agentState == AgentState::GoToUnexplored) {
-        return GoToUnexplored();
-    }
-    else if (agentState == AgentState::ReturnToBase) {
-        return Backtrack();
-    }
-    else {
-        return MoveForward();
+        turnLeft();
+        return LEFT;
     }
 }
 
-Action Agent::GoToUnexplored()
+Action Agent::moveForwardAvoidingWalls() 
 {
-    //printHistoryDebug();
-   // IsThereUnexploredCoordinates();
-
-    switch (facing) {
-    case NORTH:
-        if (!IsVisited(currentX, currentY + 1) && ! IsWall(currentX, currentY + 1)) {
-                        agentPositionHistory.push_back({currentX, currentY});
-            currentY++;
-            agentPositionHistory.push_back({currentX, currentY});
-            notdeleteAgentPositionHistory.push_back({currentX, currentY});
-            agentState = AgentState::BlindlyMove;
-            actionHistory.push(FORWARD);
-            return FORWARD;
-        }
-
-        break;
-    case EAST:
-        if (!IsVisited(currentX + 1, currentY) && !IsWall(currentX + 1, currentY)) {
-                        agentPositionHistory.push_back({currentX, currentY});
-            currentX++;
-            agentPositionHistory.push_back({currentX, currentY});
-            notdeleteAgentPositionHistory.push_back({currentX, currentY});
-            agentState = AgentState::BlindlyMove;
-            actionHistory.push(FORWARD);
-            return FORWARD;
-        }
-        
-        break;
-    case SOUTH:
-        if (!IsVisited(currentX, currentY - 1)&& !IsWall(currentX, currentY - 1)) {
-                        agentPositionHistory.push_back({currentX, currentY});
-            currentY--;
-            agentPositionHistory.push_back({currentX, currentY});
-            notdeleteAgentPositionHistory.push_back({currentX, currentY});
-            actionHistory.push(FORWARD);
-            agentState = AgentState::BlindlyMove;
-            return FORWARD;
-        }
-        break;
-    case WEST:
-            IsThereUnexploredCoordinates();
-        printf("why not here\n");
-        printf("IsVisited %i %i\n", currentX -1, currentY);
-        if (!IsVisited(currentX - 1, currentY )&& !IsWall(currentX-1, currentY )) {
-                        agentPositionHistory.push_back({currentX, currentY});
-            currentX--;
-            agentPositionHistory.push_back({currentX, currentY});
-            notdeleteAgentPositionHistory.push_back({currentX, currentY});
-            actionHistory.push(FORWARD);
-            agentState = AgentState::BlindlyMove;
-            return FORWARD;
-        }
-
-        break;
-    }
-
-    
-  return Backtrack();
-    
-}
-
-Action Agent::Backtrack() {
-    if(agentPositionHistory.size() <= 0)
+    if (!hasWallInfront()) 
     {
-        return NOOP;
-    }
-    Position prevPos = agentPositionHistory.back();
-    if (prevPos.x == currentX && prevPos.y == currentY) {
-        agentPositionHistory.pop_back();
-        return NOOP;
-    }
-    switch (facing) {
-    case NORTH:
-        if (prevPos.x == currentX && prevPos.y == currentY + 1) {
-            agentPositionHistory.pop_back();
-            currentX = prevPos.x;
-            currentY = prevPos.y;
-            return FORWARD;
-        } else {
-            return TurnRightWithoutHistory();
+        //record the current position before moving
+        pathStack.push({x, y});
+
+        //move forward based on the facing direction
+        switch (direction) 
+        {
+            case NORTH: y++; break;
+            case EAST:  x++; break;
+            case SOUTH: y--; break;
+            case WEST:  x--; break;
         }
 
-    case EAST:
-        if (prevPos.x == currentX + 1 && prevPos.y == currentY) {
-            agentPositionHistory.pop_back();
-            currentX = prevPos.x;
-            currentY = prevPos.y;
-            return FORWARD;
-        } else {
-            return TurnRightWithoutHistory();
-        }
-        break;
+        Position target = {x,y};
 
-    case SOUTH:
-        if (prevPos.x == currentX && prevPos.y == currentY - 1) {
-            agentPositionHistory.pop_back();
-            currentX = prevPos.x;
-            currentY = prevPos.y;
-            return FORWARD;
-        } else {
-            return TurnRightWithoutHistory();
+        //if visit the same position, set pre-backtrack
+        if (isVisitTheSamePosition(target)) 
+        {
+            setPrebacktrack(target);
         }
-        break;
 
-    case WEST:
-        if (prevPos.x == currentX - 1 && prevPos.y == currentY) {
-            agentPositionHistory.pop_back();
-            currentX = prevPos.x;
-            currentY = prevPos.y;
-            return FORWARD;
-        } else {
-            return TurnRightWithoutHistory();
-        }
-        break;
-    }
-    return NOOP;
-}
-
-Action Agent::MoveForward() {
-    switch (facing) {
-    case NORTH:
-        if (IsVisited(currentX, currentY + 1) || IsWall(currentX, currentY + 1)) {
-            return TurnRight();
-        }
-        currentY++;
-        break;
-    case EAST:
-        if (IsVisited(currentX + 1, currentY)|| IsWall(currentX + 1, currentY)) {
-            return TurnRight();
-        }
-        currentX++;
-        break;
-    case SOUTH:
-        if (IsVisited(currentX, currentY - 1)|| IsWall(currentX, currentY - 1)) {
-            return TurnRight();
-        }
-        currentY--;
-        break;
-    case WEST:
-        if (IsVisited(currentX - 1, currentY)|| IsWall(currentX - 1, currentY)) {
-            return TurnRight();
-        }
-        currentX--;
-        break;
-    }
-    //stuckOnSameSpotCount = 0;
-    agentPositionHistory.push_back({currentX, currentY});
-      notdeleteAgentPositionHistory.push_back({currentX, currentY});
-    actionHistory.push(FORWARD);
-    return FORWARD;
-}
-
-void Agent::printHistoryDebug() {
-    for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
-        std::cout << "x = " << it->x << ", y = " << it->y << std::endl;
+        //mark the new position as visited
+        visited.insert({x, y});
+        return FORWARD;
+    } 
+    else
+    {
+        //if there is a wall, turn to explore another direction
+        turnLeft();
+        return LEFT;
     }
 }
 
-Action Agent::TurnRight() {
-    switch (facing) {
-    case NORTH:
-        facing = EAST;
-        break;
-    case EAST:
-        facing = SOUTH;
-        break;
-    case SOUTH:
-        facing = WEST;
-        break;
-    case WEST:
-        facing = NORTH;
-        break;
+Action Agent::backtrackToHome() {
+    if (x == homeX && y == homeY) 
+    {
+        return SHUTOFF;
     }
 
-    actionHistory.push(RIGHT);
+    if (!pathStack.empty()) 
+    {
+        //get the next target position from the stack
+        Position target = pathStack.top();
+
+        //determine the direction to face toward the target
+        if (x < target.x) 
+        { 
+            if (direction != EAST) 
+            {
+                turnRight();
+                return RIGHT;
+            } 
+            else 
+            {
+                //move toward the target, then pop it
+                pathStack.pop(); 
+                x++;
+                return FORWARD;
+            }
+        } 
+        else if (x > target.x) 
+        { 
+            if (direction != WEST) {
+                turnRight();
+                return RIGHT;
+            } else {
+                pathStack.pop();
+                x--;
+                return FORWARD;
+            }
+        } 
+        else if (y < target.y) 
+        { 
+            if (direction != NORTH) 
+            {
+                turnRight();
+                return RIGHT;
+            } 
+            else 
+            {
+                pathStack.pop();
+                y++;
+                return FORWARD;
+            }
+        } 
+        else if (y > target.y) 
+        { 
+            if (direction != SOUTH) 
+            {
+                turnRight();
+                return RIGHT;
+            } 
+            else 
+            {
+                pathStack.pop();
+                y--;
+                return FORWARD;
+            }
+        }
+    }
+
+    turnRight();
     return RIGHT;
 }
 
-Action Agent::TurnRightWithoutHistory() {
-    switch (facing) {
-    case NORTH:
-        facing = EAST;
-        break;
-    case EAST:
-        facing = SOUTH;
-        break;
-    case SOUTH:
-        facing = WEST;
-        break;
-    case WEST:
-        facing = NORTH;
-        break;
+Action Agent::preBacktrack()
+{
+    printf("Fake Backtracking...\n");
+    std::cout<<"x: "<<x<<"y: "<<y<<std::endl;
+    Position target = pathStack.top();
+    if(target.x != revisitPosition.x && target.y != revisitPosition.y)
+    {
+        if (!pathStack.empty()) 
+        {
+            Position target = pathStack.top();
+            printf("pathStack.top().%i %i\n",target.x,target.y);
+
+            if (x < target.x) 
+            { 
+                if (direction != EAST) {
+                    turnRight();
+                    return RIGHT;
+                } else {
+                    pathStack.pop(); 
+                    x++;
+                    return FORWARD;
+                }
+            } 
+            else if (x > target.x)
+            {
+                if (direction != WEST) {
+                    turnRight();
+                    return RIGHT;
+                } else {
+                    pathStack.pop();
+                    x--;
+                    return FORWARD;
+                }
+            } 
+            else if (y < target.y) 
+            {
+                if (direction != NORTH) {
+                    turnRight();
+                    return RIGHT;
+                } else {
+                    pathStack.pop();
+                    y++;
+                    return FORWARD;
+                }
+            } 
+            else if (y > target.y) 
+            { 
+                if (direction != SOUTH) {
+                    turnRight();
+                    return RIGHT;
+                } else {
+                    pathStack.pop();
+                    y--;
+                    return FORWARD;
+                }
+            }
+        }
+    }
+    else
+    {
+        isPreBacktracking = false;
+        return NOOP;
     }
 
+    printf("pathStack.top(). Empty");
+    turnRight();
     return RIGHT;
 }
 
-Action Agent::TurnRightOnHitWall() {
-    int wallPosX = 0;
-    int wallPosY = 0;
-    int tempAgentPosX = currentX;
-    int tempAgentPosY = currentY;
-
-    wallPositions.push_back({currentX, currentY});
-    agentPositionHistory.pop_back();
-    switch (facing) {
-    case NORTH:
-        wallPosY = ++tempAgentPosY;
-        currentY--;
-        break;
-    case EAST:
-        wallPosX = ++tempAgentPosX;
-        currentX--;
-        break;
-    case SOUTH:
-        wallPosY = --tempAgentPosY;
-        currentY++;
-        break;
-    case WEST:
-        wallPosX = --tempAgentPosX;
-        currentX++;
-        break;
-    }
-
-    return TurnRight();
+bool Agent::hasUnexploredNeighbor() {
+    //check for unexplored cells in all four directions
+    return (!visited.count({x, y - 1}) || !visited.count({x + 1, y}) ||
+            !visited.count({x, y + 1}) || !visited.count({x - 1, y}));
 }
 
-bool Agent::IsVisited(int x, int y) {
-    for (auto it = notdeleteAgentPositionHistory.begin(); it != notdeleteAgentPositionHistory.end(); ++it) {
-        if (it->x == x && it->y == y) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool Agent::IsWall(int x, int y)
+bool Agent::hasWallInfront()
 {
-      for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it) {
-        if (it->x == x && it->y == y) {
-            return true;
-        }
+    Position nextPosition;
+    switch (direction) 
+    {
+        case NORTH: nextPosition = {x, y + 1}; break;
+        case EAST:  nextPosition = {x + 1, y}; break;
+        case SOUTH: nextPosition = {x, y - 1}; break;
+        case WEST:  nextPosition = {x - 1, y}; break;
     }
 
-    return false;
+    return wallPos.count(nextPosition);
 }
 
-void Agent::CalculateBoundary() {
-    for (auto it = agentPositionHistory.begin(); it != agentPositionHistory.end(); ++it) {
-        if (it->x <= xMinBoundary) {
-            xMinBoundary = it->x;
-        }
-        if (it->x >= xMaxBoundary) {
-            xMaxBoundary = it->x;
-        }
-        if (it->y <= yMinBoundary) {
-            yMinBoundary = it->y;
-        }
-        if (it->y >= yMaxBoundary) {
-            yMaxBoundary = it->y;
-        }
-    }
-
-    for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it) {
-        if (it->x <= xWallMinBoundary) {
-            xWallMinBoundary = it->x;
-        }
-        if (it->x >= xWallMaxBoundary) {
-            xWallMaxBoundary = it->x;
-        }
-        if (it->y <= yWallMinBoundary) {
-            yWallMinBoundary = it->y;
-        }
-        if (it->y >= yWallMaxBoundary) {
-            yWallMaxBoundary = it->y;
-        }
-    }
-}
-
-void Agent::FindUnexploredCoordinates() {
-unexplored.clear();
-
-    // Iterate through all positions within the agent boundary
-    for (int x = xMinBoundary; x <= xMaxBoundary; ++x) {
-        for (int y = yMinBoundary; y <= yMaxBoundary; ++y) {
-            Position current = {x, y};
-            bool isVisited = false;
-            bool isWall = false;
-
-            if(notdeleteAgentPositionHistory.size() > 0 )
-            {
-                for (auto it = notdeleteAgentPositionHistory.begin(); it != notdeleteAgentPositionHistory.end(); ++it) {
-                if (it->x == x && it->y == y) {
-                    isVisited = true;
-                }
-                }
-            }
-
-            if(wallPositions.size() > 0 )
-            {
-                for (auto it = wallPositions.begin(); it != wallPositions.end(); ++it) {
-                if (it->x == x && it->y == y) {
-                    isWall = true;
-                }
-            }
-            }
-
-
-            if (!isVisited && !isWall) {
-                unexplored.push_back(current);
-            }
-        }
-    }
-
-    std::cout << "Unexplored coordinates:\n";
-    for (const auto& pos : unexplored) {
-        std::cout << "(" << pos.x << ", " << pos.y << ")\n";
-    }
-}
-
-bool Agent::IsThereUnexploredCoordinates()
+bool Agent::shouldBacktrackToHome() 
 {
-  CalculateBoundary();
-  FindUnexploredCoordinates();
-
-  return unexplored.size()>0;
+    return visited.size() > 1 && !hasUnexploredNeighbor();
 }
 
-void Agent::CheckWhatToDoNext()
+bool Agent::isVisitTheSamePosition(Position target)
 {
-  if(IsThereUnexploredCoordinates())
-  {
-    agentState = AgentState::GoToUnexplored;
-    stuckOnSameSpotCount = 0;
-  }else 
-  {
-    agentState = AgentState::ReturnToBase;
-  }
-  
+    return (visited.count(target) && !(target.x == 0 && target.y == 0));
 }
