@@ -3,8 +3,7 @@
 #include <set>
 #include <vector>
 
-using OpenListContainer = std::set<size_t>; 
-using ClosedListContainer = std::set<size_t>;
+
 
 //callback object for Astar
 template <typename GraphType, typename AstarType>
@@ -22,6 +21,20 @@ class Callback
 template <typename GraphType, typename Heuristic> 
 class Astar 
 {
+    private:
+        using OpenListContainer = std::vector<typename GraphType::Vertex>; 
+        using ClosedListContainer = std::vector<typename GraphType::Vertex>;
+        using SolutionContainer = std::vector<typename GraphType::Edge>;
+        // do not modify the next 2 lines
+        const GraphType &            graph;
+        Callback<GraphType,Astar>  & callback;
+        // the next 4 lines are just sugestions
+        // OpenListContainer, ClosedListContainer, SolutionContainer are typedefed
+        OpenListContainer            openlist;
+        ClosedListContainer          closedlist;
+        SolutionContainer            solution;
+        size_t                       start_id,goal_id;
+
     public:
         ////////////////////////////////////////////////////////////
         Astar( GraphType const& _graph, Callback<GraphType,Astar> & cb ) : 
@@ -65,7 +78,8 @@ class Astar
 
         }
         ////////////////////////////////////////////////////////////
-        std::vector<typename GraphType::Edge> search(size_t s, size_t g) {
+        std::vector<typename GraphType::Edge> search(size_t s, size_t g) 
+        {
             start_id = s;
             goal_id  = g;
             openlist.clear();
@@ -73,15 +87,12 @@ class Astar
             solution.clear();
             Heuristic heuristic;
             
-            //heuristic from start to goal
-            typename Heuristic::ReturnType h = heuristic( graph,graph.GetVertex(start_id),graph.GetVertex(goal_id) );
+            openlist.push_back(s);
 
+            while ( openlist.size() > 0 ) 
+            {
+                auto current = openlist[0];
 
-
-
-
-
-            while ( openlist.size() > 0 ) {
                 callback.OnIteration( *this );
 
 
@@ -91,6 +102,16 @@ class Astar
 
             }
 
+            //heuristic from start to goal
+            typename Heuristic::ReturnType h = heuristic( graph,graph.GetVertex(start_id),graph.GetVertex(goal_id) );
+
+
+
+
+
+
+
+
 
 
 
@@ -98,17 +119,7 @@ class Astar
             return solution;
         }
         ////////////////////////////////////////////////////////////////////////
-    private:
-        using SolutionContainer = std::vector<typename GraphType::Edge>;
-        // do not modify the next 2 lines
-        const GraphType &            graph;
-        Callback<GraphType,Astar>  & callback;
-        // the next 4 lines are just sugestions
-        // OpenListContainer, ClosedListContainer, SolutionContainer are typedefed
-        OpenListContainer            openlist;
-        ClosedListContainer          closedlist;
-        SolutionContainer            solution;
-        size_t                       start_id,goal_id;
+
 };
 
 #endif
