@@ -25,7 +25,8 @@ class BadIndex : public std::exception
 };
 
 template <typename VertexType, typename EdgeType>
-class Graph {
+class Graph 
+{
 	public:
 		typedef VertexType Vertex;
 		typedef EdgeType   Edge;
