@@ -15,6 +15,7 @@ std::vector<typename GraphType::Edge> Astar<GraphType, Heuristic>::search(size_t
 
     std::map<size_t, double> g_score;
     std::map<size_t, double> f_score;
+    std::map<size_t, size_t> came_from;
             
     Vertex const& start_vertex = graph.GetVertex(start_id);
     Vertex const& goal_vertex  = graph.GetVertex(goal_id);
@@ -22,14 +23,35 @@ std::vector<typename GraphType::Edge> Astar<GraphType, Heuristic>::search(size_t
     g_score[start_id] = 0.0;
     f_score[start_id] = heuristic(graph, start_vertex, goal_vertex);
     openlist.insert(start_id);
-    
+
     while (openlist.size() > 0) 
     {
         size_t current_id = *(openlist.begin());
         openlist.erase(openlist.begin());
         
+       // std::cout<<"current id"<<current_id<<"graph"<<graph.GetVertex(current_id).ID()<<std::endl;
+
         if (current_id == goal_id) 
         {
+            std::cout<<"goal_id"<<goal_id<<std::endl;
+            size_t trace_id = goal_id;
+            while (trace_id != start_id) 
+            {
+                size_t prev_id = came_from[trace_id];
+                const auto &edges = graph.GetOutEdges(prev_id);
+                for (const Edge &edge : edges) 
+                {
+                    if (edge.GetID2() == trace_id) 
+                    {
+                        std::cout<<"edge.GetID()"<<edge.GetID1()<<std::endl;
+                        solution.push_back(edge);
+                        break;
+                    }
+                }
+                trace_id = prev_id;
+            }
+            std::reverse(solution.begin(), solution.end()); 
+
             callback.OnFinish(*this);
             return solution;
         }
@@ -51,6 +73,7 @@ std::vector<typename GraphType::Edge> Astar<GraphType, Heuristic>::search(size_t
             {
                 g_score[neighbor_id] = tentative_g;
                 f_score[neighbor_id] = tentative_g + heuristic(graph, graph.GetVertex(neighbor_id), goal_vertex);
+                came_from[neighbor_id] = current_id; 
                 openlist.insert(neighbor_id);
             }
         }

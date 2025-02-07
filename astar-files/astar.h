@@ -14,7 +14,7 @@ class Callback
         Callback( GraphType const& _g) : g(_g) {}
         virtual ~Callback() {}
         virtual void OnIteration( AstarType const& ) { }
-        virtual void OnFinish( AstarType const& )    { }
+        virtual void OnFinish( AstarType const& )    {}
 };
 
 template <typename GraphType, typename Heuristic> 

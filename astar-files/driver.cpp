@@ -119,6 +119,7 @@ void test0() {
         }
         if (worst_solution < cost) worst_solution = cost;
     } while (next_permutation(order.begin(),order.end()));
+
     std::cout << "solution cost " << worst_solution << std::endl;
 }
 
