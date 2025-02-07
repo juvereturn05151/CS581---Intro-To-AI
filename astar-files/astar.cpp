@@ -27,13 +27,25 @@ std::vector<typename GraphType::Edge> Astar<GraphType, Heuristic>::search(size_t
     while (openlist.size() > 0) 
     {
         size_t current_id = *(openlist.begin());
+
+        for (const auto& t : openlist) 
+        {
+            size_t t_heu = heuristic(graph, graph.GetVertex(t), goal_vertex);
+            size_t current_heu = heuristic(graph, graph.GetVertex(current_id), goal_vertex);
+
+            if(f_score[t] > f_score[current_id] ||( f_score[t] == f_score[current_id] && t_heu < current_heu))
+            {
+                current_id = t;
+            }
+        }
+
         openlist.erase(openlist.begin());
         
        // std::cout<<"current id"<<current_id<<"graph"<<graph.GetVertex(current_id).ID()<<std::endl;
 
         if (current_id == goal_id) 
         {
-            std::cout<<"goal_id"<<goal_id<<std::endl;
+            //std::cout<<"goal_id"<<goal_id<<std::endl;
             size_t trace_id = goal_id;
             while (trace_id != start_id) 
             {
@@ -43,7 +55,7 @@ std::vector<typename GraphType::Edge> Astar<GraphType, Heuristic>::search(size_t
                 {
                     if (edge.GetID2() == trace_id) 
                     {
-                        std::cout<<"edge.GetID()"<<edge.GetID1()<<std::endl;
+                        //std::cout<<"edge.GetID()"<<edge.GetID1()<<std::endl;
                         solution.push_back(edge);
                         break;
                     }
