@@ -1,7 +1,8 @@
 #ifndef ASTAR
 #define ASTAR
 #include <unordered_set>
-#include <set>
+#include <unordered_map>
+#include <queue>
 #include <vector>
 
 //callback object for Astar
@@ -21,7 +22,8 @@ template <typename GraphType, typename Heuristic>
 class Astar 
 {
     private:
-        using OpenListContainer = std::unordered_set<size_t>;
+        using PQElement = std::pair<double, size_t>; 
+        using OpenListContainer = std::priority_queue<PQElement, std::vector<PQElement>, std::greater<PQElement>>;
         using ClosedListContainer = std::unordered_set<size_t>;
         using SolutionContainer = std::vector<typename GraphType::Edge>;
         // do not modify the next 2 lines
@@ -33,6 +35,7 @@ class Astar
         ClosedListContainer          closedlist;
         SolutionContainer            solution;
         size_t                       start_id,goal_id;
+        std::unordered_map<size_t, bool> in_openlist;
 
     public:
         ////////////////////////////////////////////////////////////
