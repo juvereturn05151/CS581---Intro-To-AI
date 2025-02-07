@@ -78,7 +78,8 @@ class Graph
 
 		////////////////////////////////////////////////////////////
         //notice return type is a const reference - avoid unnecessary duplication
-		const typename std::vector<EdgeType> & GetOutEdges( const VertexType & v) const {
+		const typename std::vector<EdgeType> & GetOutEdges( const VertexType & v) const 
+		{
 			typename std::map< VertexType, std::vector<EdgeType> >::const_iterator it = outgoining_edges.find( v );
 
 			if ( it	!= outgoining_edges.end() )

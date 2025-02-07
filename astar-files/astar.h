@@ -1,9 +1,8 @@
 #ifndef ASTAR
 #define ASTAR
+#include <unordered_set>
 #include <set>
 #include <vector>
-
-
 
 //callback object for Astar
 template <typename GraphType, typename AstarType>
@@ -22,8 +21,8 @@ template <typename GraphType, typename Heuristic>
 class Astar 
 {
     private:
-        using OpenListContainer = std::vector<typename GraphType::Vertex>; 
-        using ClosedListContainer = std::vector<typename GraphType::Vertex>;
+        using OpenListContainer = std::set<std::pair<double, typename GraphType::Edge>>;
+        using ClosedListContainer = std::unordered_set<size_t>;
         using SolutionContainer = std::vector<typename GraphType::Edge>;
         // do not modify the next 2 lines
         const GraphType &            graph;
@@ -39,10 +38,10 @@ class Astar
         ////////////////////////////////////////////////////////////
         Astar( GraphType const& _graph, Callback<GraphType,Astar> & cb ) : 
             graph(_graph),
+            callback(cb),
             openlist(),
             closedlist(),
             solution(),
-            callback(cb),
             start_id(0),
             goal_id(0)
         {}
@@ -78,48 +77,9 @@ class Astar
 
         }
         ////////////////////////////////////////////////////////////
-        std::vector<typename GraphType::Edge> search(size_t s, size_t g) 
-        {
-            start_id = s;
-            goal_id  = g;
-            openlist.clear();
-            closedlist.clear();
-            solution.clear();
-            Heuristic heuristic;
-            
-            openlist.push_back(s);
-
-            while ( openlist.size() > 0 ) 
-            {
-                auto current = openlist[0];
-
-                callback.OnIteration( *this );
-
-
-
-
-
-
-            }
-
-            //heuristic from start to goal
-            typename Heuristic::ReturnType h = heuristic( graph,graph.GetVertex(start_id),graph.GetVertex(goal_id) );
-
-
-
-
-
-
-
-
-
-
-
-            callback.OnFinish( *this );
-            return solution;
-        }
+        std::vector<typename GraphType::Edge> search(size_t s, size_t g);
         ////////////////////////////////////////////////////////////////////////
 
 };
-
+#include "astar.cpp"
 #endif
