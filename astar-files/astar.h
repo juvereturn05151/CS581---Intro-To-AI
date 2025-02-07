@@ -21,7 +21,7 @@ template <typename GraphType, typename Heuristic>
 class Astar 
 {
     private:
-        using OpenListContainer = std::set<std::pair<double, typename GraphType::Edge>>;
+        using OpenListContainer = std::unordered_set<size_t>;
         using ClosedListContainer = std::unordered_set<size_t>;
         using SolutionContainer = std::vector<typename GraphType::Edge>;
         // do not modify the next 2 lines
@@ -45,37 +45,6 @@ class Astar
             start_id(0),
             goal_id(0)
         {}
-        ////////////////////////////////////////////////////////////
-        // this function should not be used in the actual code
-        void sample_function(size_t s, size_t g) 
-        {
-            start_id = s;
-            goal_id  = g;
-            openlist.clear();
-            closedlist.clear();
-            solution.clear();
-            Heuristic heuristic;
-
-            // note "const&", since Graph returns const references, we save a 
-            // temporary
-            typename GraphType::Vertex const& vertex_start = graph.GetVertex(start_id);
-            typename GraphType::Vertex const& vertex_goal  = graph.GetVertex(goal_id);
-
-            //heuristic from start to goal
-            typename Heuristic::ReturnType h = heuristic( graph, vertex_start, vertex_goal );
-            std::cout << "Heuristic at start " << h << std::endl;
-
-
-            // note "const&", since Graph returns const references, we save a 
-            // temporary
-			std::vector<typename GraphType::Edge> const& outedges = graph.GetOutEdges( vertex_goal );
-			size_t outedges_size = outedges.size();
-			for (size_t i = 0; i < outedges_size; ++i) 
-            {
-				std::cout << "goal has a neighbor " << outedges[i].GetID2() << " at distance " << outedges[i].GetWeight() << std::endl;
-			}
-
-        }
         ////////////////////////////////////////////////////////////
         std::vector<typename GraphType::Edge> search(size_t s, size_t g);
         ////////////////////////////////////////////////////////////////////////
