@@ -6,8 +6,6 @@ std::vector<typename GraphType::Edge> Astar<GraphType, Heuristic>::search(size_t
     start_id = s;
     goal_id  = g;
     openlist = {};  
-    in_openlist.clear();
-    closedlist.clear();
     solution.clear();
     
     Heuristic heuristic;
@@ -26,13 +24,11 @@ std::vector<typename GraphType::Edge> Astar<GraphType, Heuristic>::search(size_t
     f_score[start_id] = heuristic(graph, start_vertex, goal_vertex);
 
     openlist.push({f_score[start_id], start_id});
-    in_openlist[start_id] = true;
 
     while (!openlist.empty()) 
     {
         size_t current_id = openlist.top().second;
         openlist.pop();
-        in_openlist[current_id] = false;
 
         if (current_id == goal_id) 
         {
@@ -55,8 +51,6 @@ std::vector<typename GraphType::Edge> Astar<GraphType, Heuristic>::search(size_t
             return solution;
         }
 
-        closedlist.insert(current_id);
-
         for (const Edge& neighbor : graph.GetOutEdges(current_id)) 
         {
             size_t neighbor_id = neighbor.GetID2();
@@ -68,12 +62,8 @@ std::vector<typename GraphType::Edge> Astar<GraphType, Heuristic>::search(size_t
                 g_score[neighbor_id] = tentative_g;
                 f_score[neighbor_id] = tentative_g + heuristic(graph, graph.GetVertex(neighbor_id), goal_vertex);
                 came_from[neighbor_id] = current_id;
-
-                if (!in_openlist[neighbor_id]) 
-                {
-                    openlist.push({f_score[neighbor_id], neighbor_id});
-                    in_openlist[neighbor_id] = true;
-                }
+                
+                openlist.push({f_score[neighbor_id], neighbor_id});
             }
         }
 

@@ -24,7 +24,6 @@ class Astar
     private:
         using PQElement = std::pair<double, size_t>; 
         using OpenListContainer = std::priority_queue<PQElement, std::vector<PQElement>, std::greater<PQElement>>;
-        using ClosedListContainer = std::unordered_set<size_t>;
         using SolutionContainer = std::vector<typename GraphType::Edge>;
         // do not modify the next 2 lines
         const GraphType &            graph;
@@ -32,10 +31,8 @@ class Astar
         // the next 4 lines are just sugestions
         // OpenListContainer, ClosedListContainer, SolutionContainer are typedefed
         OpenListContainer            openlist;
-        ClosedListContainer          closedlist;
         SolutionContainer            solution;
         size_t                       start_id,goal_id;
-        std::unordered_map<size_t, bool> in_openlist;
 
     public:
         ////////////////////////////////////////////////////////////
@@ -43,7 +40,6 @@ class Astar
             graph(_graph),
             callback(cb),
             openlist(),
-            closedlist(),
             solution(),
             start_id(0),
             goal_id(0)
