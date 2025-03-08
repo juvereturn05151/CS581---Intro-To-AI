@@ -14,7 +14,8 @@
 ////////////////////////////////////////////////////////////
 //ctor, collect pointers to variables involved in the constraint
 template <typename T>
-Constraint<T>::Constraint(Variable* v1, va_list valist) : vars(), active(true) {
+Constraint<T>::Constraint(Variable* v1, va_list valist) : vars(), active(true) 
+{
 	Variable* arg;
 	this->vars.push_back(v1);
 	while ((arg = va_arg(valist, Variable*)) != 0) {
@@ -215,12 +216,14 @@ DifferenceNotEqual<Variable>::DifferenceNotEqual(int c, Variable* v1, ...)
 
 ////////////////////////////////////////////////////////////
 template <typename Variable>
-void DifferenceNotEqual<Variable>::Print (std::ostream& os) const {
+void DifferenceNotEqual<Variable>::Print (std::ostream& os) const 
+{
 	typename std::vector<Variable*>::const_iterator b = this->vars.begin();
 	typename std::vector<Variable*>::const_iterator e = this->vars.end();
 	os << "CONSTRAINT: abs of difference of 2 vars is NOT "
 		<< constant << " ";
-	for ( ; b!=e; ++b ) {
+	for ( ; b!=e; ++b ) 
+	{
 		std::cout << (*b)->Name() << " ";
 	}
 //	std::cout << std::endl;
@@ -232,9 +235,15 @@ void DifferenceNotEqual<Variable>::Print (std::ostream& os) const {
 //constraint is true if all currently assigned variables have 
 //different values
 template <typename Variable>
-INLINE bool DifferenceNotEqual<Variable>::Satisfiable() const {
-	if ( !this->vars[0]->IsAssigned() || !this->vars[1]->IsAssigned() ) { return true; } 
+INLINE bool DifferenceNotEqual<Variable>::Satisfiable() const 
+{
+	if ( !this->vars[0]->IsAssigned() || !this->vars[1]->IsAssigned() ) 
+	{ 
+		return true; 
+	} 
 	else 
+	{
 		return std::abs( this->vars[0]->GetValue() - this->vars[1]->GetValue() ) != constant;
+	}
 }
 #undef INLINE

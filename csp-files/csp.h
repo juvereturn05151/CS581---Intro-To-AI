@@ -2,6 +2,7 @@
 #define CSP_H
 #include <vector>
 #include <set>
+#include <map>
 #include <iostream>
 #include <string>
 #include <cstdarg>
@@ -12,14 +13,16 @@
 #include <limits>
 
 template <typename C>
-struct Arc {
+struct Arc 
+{
 	typedef typename C::Variable Variable;
 	//non-owning semantics, therefore DO NOT need big-4
 	Variable* x;
 	Variable* y;
 	const C* c;
 	Arc(Variable* x,Variable* y,const C* c) : x(x),y(y),c(c) {}
-	bool operator< (const Arc<C>& rhs) const {
+	bool operator< (const Arc<C>& rhs) const 
+	{
 		if ( x<rhs.x) return true;
 		if ( x==rhs.x && y<rhs.y) return true;
 		if ( x==rhs.x && y==rhs.y && c<rhs.c) return true;
@@ -29,7 +32,8 @@ struct Arc {
 };
 
 template <typename T> 
-class CSP {
+class CSP 
+{
 		//typedef's for intenal use
 		typedef typename T::Constraint      Constraint;
 		typedef typename T::Variable        Variable;

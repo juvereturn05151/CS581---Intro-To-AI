@@ -15,7 +15,8 @@
 ////////////////////////////////////////////////////////////
 
 //global function 
-std::vector<int> getVector(int val, ...) {
+std::vector<int> getVector(int val, ...) 
+{
 	std::vector<int> result;
 
 	va_list valist;

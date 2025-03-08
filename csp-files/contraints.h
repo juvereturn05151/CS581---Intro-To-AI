@@ -103,7 +103,8 @@ class AllDiff : public Constraint<Variable> {
 
 //concrete constraint - all variables are different
 template <typename Variable>
-class AllDiff2 : public Constraint<Variable> {
+class AllDiff2 : public Constraint<Variable> 
+{
 	public:
 		////////////////////////////////////////////////////////////
 		AllDiff2() : Constraint<Variable>() {}
@@ -122,7 +123,8 @@ class AllDiff2 : public Constraint<Variable> {
 
 //concrete constraint - all variables are different
 template <typename Variable>
-class DifferenceNotEqual : public Constraint<Variable> {
+class DifferenceNotEqual : public Constraint<Variable> 
+{
 	private:
 		va_list valist; //need this to pass va_list to base class ctor
 		int constant;

@@ -13,14 +13,16 @@
 ////////////////////////////////////////////////////////////
 
 //global function 
-std::vector<int> getVector(int val, ...) {
+std::vector<int> getVector(int val, ...) 
+{
 	std::vector<int> result;
 
 	va_list valist;
 	int arg;
 	va_start(valist, val);
 	result.push_back(val);
-	while ((arg = va_arg(valist, int)) != 0) {
+	while ((arg = va_arg(valist, int)) != 0) 
+	{
 		result.push_back(arg);
 	}
 	va_end(valist);
@@ -158,14 +160,17 @@ int (*pTests[])() = { test0,test1 };
 //program arguments 
 //<test>  -- run predefined test, see above
 //-100  <queen board size> <algorithm> <what to test>
-int main (int argc, char ** argv) try {
-    if (argc >1) {
+int main (int argc, char ** argv) try 
+{
+    if (argc >1) 
+	{
         int test = 0; 
         std::sscanf(argv[1],"%i",&test); 
 
         pTests[test]();
         return 0; 
     }
-} catch ( std::exception& e) {
+} catch ( std::exception& e) 
+{
 	std::cerr << e.what() << std::endl;
 }

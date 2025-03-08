@@ -27,27 +27,29 @@ bool CSP<T>::SolveDFS(unsigned level) {
 	++recursive_call_counter;
 	//std::cout << "entering SolveDFS (level " << level << ")\n";
 
-
-
-
+	if (cg.AllVariablesAssigned()) 
+	{
+        ++solution_counter;
+        return true;
+    }
 
     //choose a variable by MRV
 	Variable* var_to_assign = MinRemVal();
 	//Variable* var_to_assign = MaxDegreeHeuristic();
 
+	for (const auto& value : var_to_assign->GetDomain()) 
+	{
+		++iteration_counter;
 
+		var_to_assign->Assign(value);
 
+		if (SolveDFS(level + 1)) 
+		{
+            return true;
+        }
 
-
-    loop( ... ) {
-        ++iteration_counter;
-
-
-
-    }
-
-
-
+		var_to_assign->Unassign();
+	}
 }
 
 
@@ -57,63 +59,111 @@ template <typename T>
 bool CSP<T>::SolveFC(unsigned level) {
 	++recursive_call_counter;
 	//std::cout << "entering SolveFC (level " << level << ")\n";
-
-	
+	if (cg.AllVariablesAssigned()) 
+	{
+        ++solution_counter;
+        return true;
+    }
     
     //choose a variable by MRV
 	Variable* var_to_assign = MinRemVal();
 	//Variable* var_to_assign = MaxDegreeHeuristic();
 
-	
+	auto saved_state = SaveState(var_to_assign);
 
-    loop( ... ) {
+    for (const auto& value : var_to_assign->GetDomain()) 
+	{
         ++iteration_counter;
 
+		var_to_assign->Assign(value);
+		if (ForwardChecking(var_to_assign)) 
+		{
+            if (SolveFC(level + 1)) 
+			{
+                return true;
+            }
+        }
 
-
+        LoadState(saved_state);
+        var_to_assign->Unassign();
     }
-
-
-
 }
+
 ////////////////////////////////////////////////////////////
 //CSP solver, uses arc consistency
 template <typename T> 
-bool CSP<T>::SolveARC(unsigned level) {
+bool CSP<T>::SolveARC(unsigned level) 
+{
 	++recursive_call_counter;
 	//std::cout << "entering SolveARC (level " << level << ")\n";
+	if (cg.AllVariablesAssigned()) 
+	{
+        ++solution_counter;
+        return true;
+    }
 
-	
-    
-    
-    
     //choose a variable by MRV
 	Variable* var_to_assign = MinRemVal();
 
+    auto saved_state = SaveState(var_to_assign);
     
-    
-	
-    
-    loop( ... ) {
+    for (const auto& value : var_to_assign->GetDomain()) 
+	{
         ++iteration_counter;
 
+		var_to_assign->Assign(value);
 
+		if (CheckArcConsistency(var_to_assign)) 
+		{
+            if (SolveARC(level + 1)) {
+                return true;
+            }
+        }
 
+		LoadState(saved_state);
+        var_to_assign->Unassign();
     }
 
-
-
+    return false;
 }
 
 
 template <typename T> 
 INLINE
-bool CSP<T>::ForwardChecking(Variable *x) {
+bool CSP<T>::ForwardChecking(Variable *x) 
+{
+	const auto& neighbors = cg.GetNeighbors(x);
 
+	for (auto* neighbor : neighbors) 
+	{
+		if (!neighbor->IsAssigned()) 
+		{
+			auto domain = neighbor->GetDomain();
+			for (auto it = domain.begin(); it != domain.end(); ) 
+			{
+                neighbor->Assign(*it);
+                if (!AssignmentIsConsistent(neighbor)) 
+				{
+                    it = domain.erase(it);
+                } 
+				else 
+				{
+                    ++it;
+                }
+                neighbor->Unassign();
+            }
 
+			if (domain.empty()) 
+			{
+                return false;
+            }
+		}
 
+	}
 
+	return true;
 }
+
 ////////////////////////////////////////////////////////////
 //load states (available values) of all unassigned variables 
 template <typename T> 
@@ -166,7 +216,7 @@ bool CSP<T>::AssignmentIsConsistent( Variable* p_var ) const {
 
 
 
-
+return false;
 
 
 
@@ -186,7 +236,7 @@ void CSP<T>::InsertAllArcsTo( Variable* cv ) {
 
 
 
-
+	return false;
 
 
 
@@ -207,7 +257,7 @@ bool CSP<T>::CheckArcConsistency(Variable* x) {
 
 
 
-
+	return false;
 
 
 
@@ -224,7 +274,7 @@ bool CSP<T>::RemoveInconsistentValues(Variable* x,Variable* y,const Constraint* 
 
 
 
-
+	return false;
 
 
 
@@ -238,9 +288,8 @@ bool CSP<T>::RemoveInconsistentValues(Variable* x,Variable* y,const Constraint* 
 //choose the one with minimum remaining values
 template <typename T> 
 INLINE
-typename CSP<T>::Variable* CSP<T>::MinRemVal() {
-
-
+typename CSP<T>::Variable* CSP<T>::MinRemVal() 
+{
 
 
 
