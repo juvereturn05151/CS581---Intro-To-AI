@@ -38,7 +38,7 @@ bool CSP<T>::SolveDFS(unsigned level)
 	Variable* var_to_assign = MinRemVal();
 	//Variable* var_to_assign = MaxDegreeHeuristic();
 
-	for (const auto& value : var_to_assign->GetDomain()) 
+	for (const typename Variable::Value& value : var_to_assign->GetDomain()) 
 	{
 		++iteration_counter;
 
@@ -78,7 +78,7 @@ bool CSP<T>::SolveFC(unsigned level)
 
 	auto saved_state = SaveState(var_to_assign);
 
-    for (const auto& value : var_to_assign->GetDomain()) 
+    for (const typename Variable::Value& value : var_to_assign->GetDomain()) 
 	{
         ++iteration_counter;
 
@@ -116,7 +116,7 @@ bool CSP<T>::SolveARC(unsigned level)
 
     auto saved_state = SaveState(var_to_assign);
     
-    for (const auto& value : var_to_assign->GetDomain()) 
+    for (const typename Variable::Value& value : var_to_assign->GetDomain()) 
 	{
         ++iteration_counter;
 
@@ -335,7 +335,7 @@ template <typename T>
 INLINE
 typename CSP<T>::Variable* CSP<T>::MinRemVal() 
 {
-    Variable* result = nullptr;
+    Variable* result = NULL;
     size_t min_size = std::numeric_limits<size_t>::max();
 
     const auto& all_vars = cg.GetAllVariables();
@@ -361,7 +361,7 @@ typename CSP<T>::Variable* CSP<T>::MinRemVal()
 template <typename T> 
 typename CSP<T>::Variable* CSP<T>::MaxDegreeHeuristic() 
 {
-    Variable* result = nullptr;
+    Variable* result = NULL;
     size_t max_degree = 0;
 
     const auto& all_vars = cg.GetAllVariables();
