@@ -62,7 +62,8 @@ bool CSP<T>::SolveDFS(unsigned level)
 ////////////////////////////////////////////////////////////
 //CSP solver, uses forward checking
 template <typename T> 
-bool CSP<T>::SolveFC(unsigned level) {
+bool CSP<T>::SolveFC(unsigned level) 
+{
 	++recursive_call_counter;
 	//std::cout << "entering SolveFC (level " << level << ")\n";
 	if (cg.AllVariablesAssigned()) 
@@ -165,6 +166,8 @@ bool CSP<T>::ForwardChecking(Variable *x)
 			{
                 return false;
             }
+
+			neighbor->SetDomain(domain);
 		}
 
 	}
