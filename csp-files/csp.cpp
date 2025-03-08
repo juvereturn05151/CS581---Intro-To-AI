@@ -38,8 +38,10 @@ bool CSP<T>::SolveDFS(unsigned level)
 	Variable* var_to_assign = MinRemVal();
 	//Variable* var_to_assign = MaxDegreeHeuristic();
 
-	for (const typename Variable::Value& value : var_to_assign->GetDomain()) 
+	const std::set<typename Variable::Value>& domain = var_to_assign->GetDomain();
+    for (typename std::set<typename Variable::Value>::const_iterator it = domain.begin(); it != domain.end(); ++it)
 	{
+		const typename Variable::Value& value = *it;
 		++iteration_counter;
 
 		var_to_assign->Assign(value);
@@ -76,10 +78,12 @@ bool CSP<T>::SolveFC(unsigned level)
 	Variable* var_to_assign = MinRemVal();
 	//Variable* var_to_assign = MaxDegreeHeuristic();
 
-	auto saved_state = SaveState(var_to_assign);
+	std::map<Variable*, std::set<typename Variable::Value> >   saved_state = SaveState(var_to_assign);
 
-    for (const typename Variable::Value& value : var_to_assign->GetDomain()) 
+	const std::set<typename Variable::Value>& domain = var_to_assign->GetDomain();
+    for (typename std::set<typename Variable::Value>::const_iterator it = domain.begin(); it != domain.end(); ++it)
 	{
+		const typename Variable::Value& value = *it;
         ++iteration_counter;
 
 		var_to_assign->Assign(value);
@@ -114,10 +118,12 @@ bool CSP<T>::SolveARC(unsigned level)
     //choose a variable by MRV
 	Variable* var_to_assign = MinRemVal();
 
-    auto saved_state = SaveState(var_to_assign);
+    std::map<Variable*, std::set<typename Variable::Value> >   saved_state = SaveState(var_to_assign);
     
-    for (const typename Variable::Value& value : var_to_assign->GetDomain()) 
+	const std::set<typename Variable::Value>& domain = var_to_assign->GetDomain();
+    for (typename std::set<typename Variable::Value>::const_iterator it = domain.begin(); it != domain.end(); ++it)
 	{
+		const typename Variable::Value& value = *it;
         ++iteration_counter;
 
 		var_to_assign->Assign(value);
@@ -141,23 +147,24 @@ template <typename T>
 INLINE
 bool CSP<T>::ForwardChecking(Variable *x) 
 {
-	const auto& neighbors = cg.GetNeighbors(x);
+	const std::set<Variable*>& neighbors = cg.GetNeighbors(x);
 
-	for (auto* neighbor : neighbors) 
+    for (typename std::set<Variable*>::const_iterator it = neighbors.begin(); it != neighbors.end(); ++it) 
 	{
+        Variable* neighbor = *it;
 		if (!neighbor->IsAssigned()) 
 		{
-			auto domain = neighbor->GetDomain();
-			for (auto it = domain.begin(); it != domain.end(); ) 
+			std::set<typename Variable::Value> domain = neighbor->GetDomain();
+			for (typename std::set<typename Variable::Value>::iterator it2 = domain.begin(); it2 != domain.end(); )
 			{
-                neighbor->Assign(*it);
+                neighbor->Assign(*it2);
                 if (!AssignmentIsConsistent(neighbor)) 
 				{
-                    it = domain.erase(it);
+                    it2 = domain.erase(it2);
                 } 
 				else 
 				{
-                    ++it;
+                    ++it2;
                 }
                 neighbor->UnAssign();
             }
@@ -227,10 +234,11 @@ template <typename T>
 INLINE
 bool CSP<T>::AssignmentIsConsistent( Variable* p_var ) const 
 {
-	const auto& constraints = cg.GetConstraints(p_var);
+	const std::vector<const Constraint*>& constraints = cg.GetConstraints(p_var);
 
-    for (const auto* constraint : constraints) 
+    for (typename std::vector<const Constraint*>::const_iterator it = constraints.begin(); it != constraints.end(); ++it) 
 	{
+        const Constraint* constraint = *it;
         if (!constraint->Satisfiable()) 
 		{
             return false;
@@ -250,12 +258,16 @@ template <typename T>
 INLINE
 void CSP<T>::InsertAllArcsTo( Variable* cv ) 
 {
-	const auto& neighbors = cg.GetNeighbors(cv);
+    const std::set<Variable*>& neighbors = cg.GetNeighbors(cv);
 
-	for (auto* neighbor : neighbors) 
+    for (typename std::set<Variable*>::const_iterator it = neighbors.begin(); it != neighbors.end(); ++it) 
 	{
-        const auto& constraints = cg.GetConnectingConstraints(cv, neighbor);
-        for (const auto* constraint : constraints) {
+        Variable* neighbor = *it;
+        const std::set<const Constraint*>& constraints = cg.GetConnectingConstraints(cv, neighbor);
+
+        for (typename std::set<const Constraint*>::const_iterator it2 = constraints.begin(); it2 != constraints.end(); ++it2) 
+		{
+            const Constraint* constraint = *it2;
             arc_consistency.insert(Arc<Constraint>(neighbor, cv, constraint));
         }
     }
@@ -272,7 +284,8 @@ bool CSP<T>::CheckArcConsistency(Variable* x)
 
 	while (!arc_consistency.empty()) 
 	{
-        auto arc = *arc_consistency.begin();
+        typename std::set<Arc<Constraint> >::iterator it = arc_consistency.begin();
+        Arc<Constraint> arc = *it;
         arc_consistency.erase(arc_consistency.begin());
 
         if (RemoveInconsistentValues(arc.x, arc.y, arc.c)) 
@@ -297,17 +310,20 @@ INLINE
 bool CSP<T>::RemoveInconsistentValues(Variable* x,Variable* y,const Constraint* c) 
 {
     bool removed = false;
-    auto domain = x->GetDomain();
+    std::set<typename Variable::Value> domain = x->GetDomain();
 
-    for (auto it = domain.begin(); it != domain.end(); ) 
+    for (typename std::set<typename Variable::Value>::iterator it = domain.begin(); it != domain.end(); ) 
 	{
         bool consistent = false;
 
-        for (const auto& y_value : y->GetDomain()) 
+        const std::set<typename Variable::Value>& y_domain = y->GetDomain();
+        for (typename std::set<typename Variable::Value>::const_iterator it2 = y_domain.begin(); it2 != y_domain.end(); ++it2) 
 		{
+            const typename Variable::Value& y_value = *it2;
             x->Assign(*it);
             y->Assign(y_value);
-            if (c->Satisfiable()) {
+            if (c->Satisfiable()) 
+			{
                 consistent = true;
             }
             x->UnAssign();
@@ -324,9 +340,9 @@ bool CSP<T>::RemoveInconsistentValues(Variable* x,Variable* y,const Constraint* 
             ++it;
         }
     }
+
     x->SetDomain(domain);
     return removed;
-
 }
 ////////////////////////////////////////////////////////////
 //choose next variable for assignment
@@ -338,9 +354,10 @@ typename CSP<T>::Variable* CSP<T>::MinRemVal()
     Variable* result = NULL;
     size_t min_size = std::numeric_limits<size_t>::max();
 
-    const auto& all_vars = cg.GetAllVariables();
-    for (auto* var : all_vars) 
+	const std::vector<Variable*>& all_vars = cg.GetAllVariables();
+    for (typename std::vector<Variable*>::const_iterator it = all_vars.begin(); it != all_vars.end(); ++it) 
 	{
+        Variable* var = *it;
         if (!var->IsAssigned())
 		{
             size_t domain_size = var->GetDomain().size();
@@ -364,9 +381,10 @@ typename CSP<T>::Variable* CSP<T>::MaxDegreeHeuristic()
     Variable* result = NULL;
     size_t max_degree = 0;
 
-    const auto& all_vars = cg.GetAllVariables();
-    for (auto* var : all_vars) 
+	const std::vector<Variable*>& all_vars = cg.GetAllVariables();
+    for (typename std::vector<Variable*>::const_iterator it = all_vars.begin(); it != all_vars.end(); ++it) 
 	{
+        Variable* var = *it;
         if (!var->IsAssigned()) 
 		{
             size_t degree = cg.GetNeighbors(var).size();
