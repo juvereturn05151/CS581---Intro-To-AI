@@ -23,7 +23,8 @@ CSP<T>::CSP(T &cg) :
 ////////////////////////////////////////////////////////////
 //CSP solver, brute force - no forward checking
 template <typename T> 
-bool CSP<T>::SolveDFS(unsigned level) {
+bool CSP<T>::SolveDFS(unsigned level) 
+{
 	++recursive_call_counter;
 	//std::cout << "entering SolveDFS (level " << level << ")\n";
 
@@ -43,13 +44,18 @@ bool CSP<T>::SolveDFS(unsigned level) {
 
 		var_to_assign->Assign(value);
 
-		if (SolveDFS(level + 1)) 
+		if (AssignmentIsConsistent(var_to_assign)) 
 		{
-            return true;
-        }
+			if (SolveDFS(level + 1)) 
+			{
+				return true;
+			}
+		}
 
 		var_to_assign->UnAssign();
 	}
+
+	return false;
 }
 
 
@@ -87,6 +93,8 @@ bool CSP<T>::SolveFC(unsigned level) {
         LoadState(saved_state);
         var_to_assign->UnAssign();
     }
+
+	return false;
 }
 
 ////////////////////////////////////////////////////////////
