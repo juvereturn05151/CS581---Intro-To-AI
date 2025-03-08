@@ -48,7 +48,7 @@ bool CSP<T>::SolveDFS(unsigned level) {
             return true;
         }
 
-		var_to_assign->Unassign();
+		var_to_assign->UnAssign();
 	}
 }
 
@@ -85,7 +85,7 @@ bool CSP<T>::SolveFC(unsigned level) {
         }
 
         LoadState(saved_state);
-        var_to_assign->Unassign();
+        var_to_assign->UnAssign();
     }
 }
 
@@ -121,7 +121,7 @@ bool CSP<T>::SolveARC(unsigned level)
         }
 
 		LoadState(saved_state);
-        var_to_assign->Unassign();
+        var_to_assign->UnAssign();
     }
 
     return false;
@@ -150,7 +150,7 @@ bool CSP<T>::ForwardChecking(Variable *x)
 				{
                     ++it;
                 }
-                neighbor->Unassign();
+                neighbor->UnAssign();
             }
 
 			if (domain.empty()) 
@@ -190,7 +190,8 @@ void CSP<T>::LoadState(
 template <typename T> 
 INLINE
 std::map< typename CSP<T>::Variable*, std::set<typename CSP<T>::Variable::Value> > 
-CSP<T>::SaveState(typename CSP<T>::Variable* x) const {
+CSP<T>::SaveState(typename CSP<T>::Variable* x) const 
+{
 	std::map<Variable*, std::set<typename Variable::Value> > result;
 
 	const std::vector<Variable*>& all_vars = cg.GetAllVariables();
@@ -198,8 +199,10 @@ CSP<T>::SaveState(typename CSP<T>::Variable* x) const {
 		b_all_vars = all_vars.begin();
 	typename std::vector<Variable*>::const_iterator 
 		e_all_vars = all_vars.end();
-	for ( ; b_all_vars!=e_all_vars; ++b_all_vars) {
-		if ( !(*b_all_vars)->IsAssigned() && *b_all_vars!=x ) {
+	for ( ; b_all_vars!=e_all_vars; ++b_all_vars) 
+	{
+		if ( !(*b_all_vars)->IsAssigned() && *b_all_vars!=x ) 
+		{
 			//std::cout << "saving state for " 
 			//<< (*b_all_vars)->Name() << std::endl;
 			result[ *b_all_vars ] = (*b_all_vars)->GetDomain();
@@ -211,18 +214,21 @@ CSP<T>::SaveState(typename CSP<T>::Variable* x) const {
 //check the current (incomplete) assignment for satisfiability
 template <typename T> 
 INLINE
-bool CSP<T>::AssignmentIsConsistent( Variable* p_var ) const {
+bool CSP<T>::AssignmentIsConsistent( Variable* p_var ) const 
+{
+	const auto& constraints = cg.GetConstraints(p_var);
 
+    for (const auto* constraint : constraints) 
+	{
+        if (!constraint->Satisfiable()) 
+		{
+            return false;
+        }
+    }
 
-
-
-return false;
-
-
-
-
-
+    return true;
 }
+
 ////////////////////////////////////////////////////////////
 //insert pair 
 //(neighbors of the current variable, the current variable)
@@ -231,18 +237,17 @@ return false;
 //into arc-consistency queue
 template <typename T> 
 INLINE
-void CSP<T>::InsertAllArcsTo( Variable* cv ) {
+void CSP<T>::InsertAllArcsTo( Variable* cv ) 
+{
+	const auto& neighbors = cg.GetNeighbors(cv);
 
-
-
-
-	return false;
-
-
-
-
-
-
+	for (auto* neighbor : neighbors) 
+	{
+        const auto& constraints = cg.GetConnectingConstraints(cv, neighbor);
+        for (const auto* constraint : constraints) {
+            arc_consistency.insert(Arc<Constraint>(neighbor, cv, constraint));
+        }
+    }
 }
 ////////////////////////////////////////////////////////////
 
@@ -250,37 +255,66 @@ void CSP<T>::InsertAllArcsTo( Variable* cv ) {
 //AIMA p.146 AC-3 algorithm
 template <typename T> 
 INLINE
-bool CSP<T>::CheckArcConsistency(Variable* x) {
+bool CSP<T>::CheckArcConsistency(Variable* x) 
+{
+	InsertAllArcsTo(x);
 
+	while (!arc_consistency.empty()) 
+	{
+        auto arc = *arc_consistency.begin();
+        arc_consistency.erase(arc_consistency.begin());
 
+        if (RemoveInconsistentValues(arc.x, arc.y, arc.c)) 
+		{
+            if (arc.x->GetDomain().empty()) 
+			{
+                return false;
+            }
 
+            InsertAllArcsTo(arc.x);
+        }
+    }
 
-
-
-	return false;
-
-
-
-
-
+    return true;
 }
+
 ////////////////////////////////////////////////////////////
 //CHECK that for each value of x there is a value of y 
 //which makes all constraints involving x and y satisfiable
 template <typename T> 
 INLINE
-bool CSP<T>::RemoveInconsistentValues(Variable* x,Variable* y,const Constraint* c) {
+bool CSP<T>::RemoveInconsistentValues(Variable* x,Variable* y,const Constraint* c) 
+{
+    bool removed = false;
+    auto domain = x->GetDomain();
 
+    for (auto it = domain.begin(); it != domain.end(); ) 
+	{
+        bool consistent = false;
 
+        for (const auto& y_value : y->GetDomain()) 
+		{
+            x->Assign(*it);
+            y->Assign(y_value);
+            if (c->Satisfiable()) {
+                consistent = true;
+            }
+            x->UnAssign();
+            y->UnAssign();
+        }
 
-
-	return false;
-
-
-
-
-
-
+        if (!consistent) 
+		{
+            it = domain.erase(it);
+            removed = true;
+        } 
+		else 
+		{
+            ++it;
+        }
+    }
+    x->SetDomain(domain);
+    return removed;
 
 }
 ////////////////////////////////////////////////////////////
@@ -290,32 +324,49 @@ template <typename T>
 INLINE
 typename CSP<T>::Variable* CSP<T>::MinRemVal() 
 {
+    Variable* result = nullptr;
+    size_t min_size = std::numeric_limits<size_t>::max();
 
+    const auto& all_vars = cg.GetAllVariables();
+    for (auto* var : all_vars) 
+	{
+        if (!var->IsAssigned())
+		{
+            size_t domain_size = var->GetDomain().size();
 
+            if (domain_size < min_size) 
+			{
+                min_size = domain_size;
+                result = var;
+            }
+        }
+    }
 
-
-
-
-
+    return result;
 }
 ////////////////////////////////////////////////////////////
 //choose next variable for assignment
 //choose the one with max degree
 template <typename T> 
-typename CSP<T>::Variable* CSP<T>::MaxDegreeHeuristic() {
+typename CSP<T>::Variable* CSP<T>::MaxDegreeHeuristic() 
+{
+    Variable* result = nullptr;
+    size_t max_degree = 0;
 
+    const auto& all_vars = cg.GetAllVariables();
+    for (auto* var : all_vars) 
+	{
+        if (!var->IsAssigned()) 
+		{
+            size_t degree = cg.GetNeighbors(var).size();
+            if (degree > max_degree) 
+			{
+                max_degree = degree;
+                result = var;
+            }
+        }
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
+    return result;
 }
 #undef INLINE
