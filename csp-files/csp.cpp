@@ -87,6 +87,7 @@ bool CSP<T>::SolveFC(unsigned level)
         ++iteration_counter;
 
 		var_to_assign->Assign(value);
+		
 		if (ForwardChecking(var_to_assign)) 
 		{
             if (SolveFC(level + 1)) 
@@ -152,12 +153,14 @@ bool CSP<T>::ForwardChecking(Variable *x)
     for (typename std::set<Variable*>::const_iterator it = neighbors.begin(); it != neighbors.end(); ++it) 
 	{
         Variable* neighbor = *it;
+
 		if (!neighbor->IsAssigned()) 
 		{
 			std::set<typename Variable::Value> domain = neighbor->GetDomain();
 			for (typename std::set<typename Variable::Value>::iterator it2 = domain.begin(); it2 != domain.end(); )
 			{
                 neighbor->Assign(*it2);
+
                 if (!AssignmentIsConsistent(neighbor)) 
 				{
                     it2 = domain.erase(it2);
@@ -166,6 +169,7 @@ bool CSP<T>::ForwardChecking(Variable *x)
 				{
                     ++it2;
                 }
+				
                 neighbor->UnAssign();
             }
 
@@ -310,29 +314,33 @@ INLINE
 bool CSP<T>::RemoveInconsistentValues(Variable* x,Variable* y,const Constraint* c) 
 {
     bool removed = false;
-    std::set<typename Variable::Value> domain = x->GetDomain();
+    std::set<typename Variable::Value> x_domain = x->GetDomain();
 
-    for (typename std::set<typename Variable::Value>::iterator it = domain.begin(); it != domain.end(); ) 
+    for (typename std::set<typename Variable::Value>::iterator it = x_domain.begin(); it != x_domain.end(); ) 
 	{
         bool consistent = false;
 
         const std::set<typename Variable::Value>& y_domain = y->GetDomain();
+
         for (typename std::set<typename Variable::Value>::const_iterator it2 = y_domain.begin(); it2 != y_domain.end(); ++it2) 
 		{
             const typename Variable::Value& y_value = *it2;
+
             x->Assign(*it);
             y->Assign(y_value);
+
             if (c->Satisfiable()) 
 			{
                 consistent = true;
             }
+
             x->UnAssign();
             y->UnAssign();
         }
 
         if (!consistent) 
 		{
-            it = domain.erase(it);
+            it = x_domain.erase(it);
             removed = true;
         } 
 		else 
@@ -341,9 +349,10 @@ bool CSP<T>::RemoveInconsistentValues(Variable* x,Variable* y,const Constraint* 
         }
     }
 
-    x->SetDomain(domain);
+    x->SetDomain(x_domain);
     return removed;
 }
+
 ////////////////////////////////////////////////////////////
 //choose next variable for assignment
 //choose the one with minimum remaining values
@@ -352,7 +361,7 @@ INLINE
 typename CSP<T>::Variable* CSP<T>::MinRemVal() 
 {
     Variable* result = NULL;
-    size_t min_size = std::numeric_limits<size_t>::max();
+    size_t min_value = std::numeric_limits<size_t>::max();
 
 	const std::vector<Variable*>& all_vars = cg.GetAllVariables();
     for (typename std::vector<Variable*>::const_iterator it = all_vars.begin(); it != all_vars.end(); ++it) 
@@ -360,11 +369,11 @@ typename CSP<T>::Variable* CSP<T>::MinRemVal()
         Variable* var = *it;
         if (!var->IsAssigned())
 		{
-            size_t domain_size = var->GetDomain().size();
+            size_t value = var->GetDomain().size();
 
-            if (domain_size < min_size) 
+            if (value < min_value) 
 			{
-                min_size = domain_size;
+                min_value = value;
                 result = var;
             }
         }
@@ -379,7 +388,7 @@ template <typename T>
 typename CSP<T>::Variable* CSP<T>::MaxDegreeHeuristic() 
 {
     Variable* result = NULL;
-    size_t max_degree = 0;
+    size_t max_value = 0;
 
 	const std::vector<Variable*>& all_vars = cg.GetAllVariables();
     for (typename std::vector<Variable*>::const_iterator it = all_vars.begin(); it != all_vars.end(); ++it) 
@@ -387,10 +396,11 @@ typename CSP<T>::Variable* CSP<T>::MaxDegreeHeuristic()
         Variable* var = *it;
         if (!var->IsAssigned()) 
 		{
-            size_t degree = cg.GetNeighbors(var).size();
-            if (degree > max_degree) 
+            size_t value = cg.GetNeighbors(var).size();
+
+            if (value > max_value) 
 			{
-                max_degree = degree;
+                max_value = value;
                 result = var;
             }
         }
