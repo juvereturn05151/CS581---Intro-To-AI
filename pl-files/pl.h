@@ -73,6 +73,15 @@ class Clause {
             literals.insert(lit);
         }
 
+        std::set<Literal>::const_iterator begin() const { return literals.begin(); }
+        std::set<Literal>::const_iterator end() const { return literals.end(); }
+
+        Clause const operator|(Clause const& other) const {
+            Clause result = *this;
+            result.literals.insert(other.literals.begin(), other.literals.end());
+            return result;
+        }
+
         ////////////////////////////////////////////////////////////////////////
         friend std::ostream& operator<<( std::ostream& os, Clause const& clause ) {
             unsigned size = clause.literals.size();
@@ -131,12 +140,31 @@ class CNF {
                     result = result & CNF(newClause);
                 }
             }
-            
+            else
+            {
+                std::vector<CNF> negatedClauses;
+                for (const Clause& clause : clauses) {
+                    CNF temp;
+                    for (const Literal& lit : clause) {
+                        Clause singleClause;
+                        singleClause.AddLiteral(~lit);
+                        temp = temp & CNF(singleClause); // ~clause = ~A & ~B & ~C
+                    }
+                    negatedClauses.push_back(temp);
+                }
 
+                result = negatedClauses[0];
+                for (size_t i = 1; i < negatedClauses.size(); ++i) {
+                    result = result | negatedClauses[i];
+                }
+            }
+
+            return result;
         }
         ////////////////////////////////////////////////////////////////////////
         // =>
-        CNF const operator>( CNF const& op2 ) const {
+        CNF const operator>( CNF const& op2 ) const 
+        {
             CNF const& op1 = *this;
             return ~(op1)|op2;
         }
@@ -146,6 +174,13 @@ class CNF {
             //CNF1 = clause1 & clause2 & clause3,
             //CNF2 = clause4 & clause5 & clause6,
             //CNF1 & CNF2 = clause1 & clause2 & clause3 & clause4 & clause5 & clause6
+            CNF result;
+            
+            result.clauses.insert(this->clauses.begin(), this->clauses.end());
+
+            result.clauses.insert(op2.clauses.begin(), op2.clauses.end());
+
+            return result;
         }
         ///////////////////////////////////////////////////////////////////////
         // or
@@ -156,6 +191,17 @@ class CNF {
             //              c1|c4 & c1|c5 & c1|c6    &
             //              c2|c4 & c2|c5 & c2|c6    &
             //              c3|c4 & c3|c5 & c3|c6
+
+            CNF result;
+
+            for (const Clause& c1 : this->clauses) {
+                for (const Clause& c2 : op2.clauses) {
+                    Clause combined = c1 | c2;
+                    result.clauses.insert(combined);
+                }
+            }
+        
+            return result;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
