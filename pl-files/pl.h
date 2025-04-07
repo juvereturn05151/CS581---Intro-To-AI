@@ -96,8 +96,18 @@ class Clause {
 
 class CNF {
     public:
-        // ..........
-        // ..........
+        CNF() = default;
+
+        CNF(Literal const& lit) {
+            Clause clause;
+            clause.AddLiteral(lit);      
+            clauses.insert(clause);     
+        }
+
+        CNF(Clause const& clause) {
+            clauses.insert(clause);
+        }
+    
         // ..........
         // ..........
         ////////////////////////////////////////////////////////////////////////
@@ -109,6 +119,20 @@ class CNF {
             //CNF = clause1 & clause2 & clause3,
             //~CNF = ~clause1 | ~clause2 | ~clause3 
             //"or" is defined later 
+            CNF result;
+
+            if (clauses.size() == 1) 
+            {
+                const Clause& clause = *clauses.begin();
+                for (const Literal& lit : clause) {
+                    Literal negatedLit = ~lit;
+                    Clause newClause;
+                    newClause.AddLiteral(negatedLit);
+                    result = result & CNF(newClause);
+                }
+            }
+            
+
         }
         ////////////////////////////////////////////////////////////////////////
         // =>
@@ -140,7 +164,10 @@ class CNF {
         CNF const operator|( Literal const& op2 ) const { return operator|( CNF(op2) ); }
 
         ////////////////////////////////////////////////////////////////////////
-        bool Empty() const { return literals.size()==0; }
+        bool Empty() const 
+        { 
+            return clauses.empty(); 
+        }
         ////////////////////////////////////////////////////////////////////////
         std::set< Clause >::const_iterator begin() const { return clauses.begin(); }
         std::set< Clause >::const_iterator end()   const { return clauses.end(); }
