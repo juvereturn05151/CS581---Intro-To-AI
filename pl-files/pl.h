@@ -55,10 +55,24 @@ class Literal {
 
 class Clause {
     public:
-        // ..........
-        // ..........
-        // ..........
-        // ..........
+        Clause() = default;
+
+        Clause(std::initializer_list<Literal> init) {
+            for (auto const& lit : init) {
+                literals.insert(lit);
+            }
+        }
+
+        size_t size() const 
+        {
+            return literals.size();
+        }
+
+        void AddLiteral(const Literal& lit) 
+        {
+            literals.insert(lit);
+        }
+
         ////////////////////////////////////////////////////////////////////////
         friend std::ostream& operator<<( std::ostream& os, Clause const& clause ) {
             unsigned size = clause.literals.size();
