@@ -21,13 +21,25 @@ gcc0:
 0:
 	@echo "running test$@: 10-queen problem using DFS"
 	@echo "should run in less than 1000 ms"
-	./$(PRG) $@ >studentout$@ 
+		@{ \
+        start=$$(date +%s%3N); \
+        ./$(PRG) $@ >studentout$@; \
+        end=$$(date +%s%3N); \
+        runtime=$$((end - start)); \
+        echo "actual runtime: $${runtime} ms"; \
+    }
 	@echo "lines after the next are mismatches with master output -- see out$@"
 	diff out$@ studentout$@ $(DIFF_OPTIONS)
 1:
 	@echo "running test$@: 100-queen problem using FC"
 	@echo "should run in less than 1000 ms"
-	./$(PRG) $@ >studentout$@ 
+	@{ \
+        start=$$(date +%s%3N); \
+        ./$(PRG) $@ >studentout$@; \
+        end=$$(date +%s%3N); \
+        runtime=$$((end - start)); \
+        echo "actual runtime: $${runtime} ms"; \
+    }
 	@echo "lines after the next are mismatches with master output -- see out$@"
 	diff out$@ studentout$@ $(DIFF_OPTIONS)
 clean:
