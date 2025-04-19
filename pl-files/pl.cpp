@@ -76,8 +76,9 @@ bool KnowledgeBase::ProveByRefutation(CNF const& alpha) const {
                             }
                         }
 
+                        // Contradiction found
                         if (resolvent.size() == 0) {
-                            return true; // Contradiction found
+                            return true; 
                         }
 
                         if (kbClauses.find(resolvent) == kbClauses.end()) {
@@ -108,7 +109,8 @@ bool KnowledgeBase::ProveByRefutation(CNF const& alpha) const {
         }
     }
 
-    return false; // No contradiction found
+    // No contradiction found
+    return false; 
 }
 
 ////////////////////////////////////////////////////////////////////////////

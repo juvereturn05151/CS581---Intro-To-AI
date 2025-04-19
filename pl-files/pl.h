@@ -292,12 +292,9 @@ class CNF {
             if (this->Empty()) return op2;
             if (op2.Empty()) return *this;
 
-
-            // Check for complementary literals that would create tautologies
             for (const Clause& c1 : clauses) {
                 for (const Clause& c2 : op2.clauses) {
                     Clause combined = c1 | c2;
-                    
                     result.clauses.insert(combined);
                 }
             }
