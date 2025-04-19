@@ -36,58 +36,79 @@ unsigned KnowledgeBase::size()  const
 }
 
 ////////////////////////////////////////////////////////////////////////////
-bool KnowledgeBase::ProveByRefutation( CNF const& alpha ) const 
-{
-    std::set<Clause> kbClauses = this->clauses;       
-    CNF negatedAlpha = ~alpha;
-
-    for (const Clause& c : negatedAlpha)
-    {
-        kbClauses.insert(c);
+bool KnowledgeBase::ProveByRefutation(CNF const& alpha) const {
+    std::set<Clause> kbClauses = clauses;
+    
+    // Add negated alpha to KB
+    for (auto const& clause : ~alpha) {
+        kbClauses.insert(clause);
     }
 
-    std::set<Clause> newClauses;
+    std::set<Clause> derivedClauses;
+    bool changed = true;
 
-    bool addedNewClause = true;
-    while (addedNewClause) 
-    {
-        addedNewClause = false;
-        std::vector<Clause> clauseVec(kbClauses.begin(), kbClauses.end());
+    while (changed) {
+        changed = false;
+        std::vector<Clause> currentClauses(kbClauses.begin(), kbClauses.end());
 
-        // Resolve all pairs
-        for (size_t i = 0; i < clauseVec.size(); ++i) 
-        {
-            for (size_t j = i + 1; j < clauseVec.size(); ++j) 
-            {
-                const Clause& c1 = clauseVec[i];
-                const Clause& c2 = clauseVec[j];
+        // Try unit resolution first
+        for (size_t i = 0; i < currentClauses.size(); ++i) {
+            if (currentClauses[i].size() == 1) {
+                Literal unitLit = *currentClauses[i].begin();
+                for (size_t j = 0; j < currentClauses.size(); ++j) {
+                    if (i == j) continue;
 
-                std::set<Clause> resolvents = c1.Resolve(c2); 
-
-                for (const Clause& r : resolvents) 
-                {
-                    // Contradiction
-                    if (r.size() == 0) 
-                    {
-                        return true;
+                    // Check if clause contains complementary literal
+                    bool shouldResolve = false;
+                    for (auto const& lit : currentClauses[j]) {
+                        if (lit.Complementary(unitLit)) {
+                            shouldResolve = true;
+                            break;
+                        }
                     }
 
-                    if (kbClauses.find(r) == kbClauses.end() && newClauses.find(r) == newClauses.end()) 
-                    {
-                        newClauses.insert(r);
-                        addedNewClause = true;
+                    if (shouldResolve) {
+                        Clause resolvent;
+                        // Add all literals except the complementary one
+                        for (auto const& lit : currentClauses[j]) {
+                            if (!lit.Complementary(unitLit)) {
+                                resolvent.AddLiteral(lit);
+                            }
+                        }
+
+                        if (resolvent.size() == 0) {
+                            return true; // Contradiction found
+                        }
+
+                        if (kbClauses.find(resolvent) == kbClauses.end()) {
+                            kbClauses.insert(resolvent);
+                            changed = true;
+                        }
                     }
                 }
             }
         }
 
-        // Merge new clauses into the KB
-        kbClauses.insert(newClauses.begin(), newClauses.end());
-        newClauses.clear();
+        // Full resolution if no unit clauses
+        if (!changed) {
+            for (size_t i = 0; i < currentClauses.size(); ++i) {
+                for (size_t j = i + 1; j < currentClauses.size(); ++j) {
+                    auto resolvents = currentClauses[i].Resolve(currentClauses[j]);
+                    for (auto const& r : resolvents) {
+                        if (r.size() == 0) {
+                            return true; // Contradiction
+                        }
+                        if (kbClauses.find(r) == kbClauses.end()) {
+                            kbClauses.insert(r);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    // No contradiction
-    return false;
+    return false; // No contradiction found
 }
 
 ////////////////////////////////////////////////////////////////////////////

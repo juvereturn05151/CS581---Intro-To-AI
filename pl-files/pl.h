@@ -183,6 +183,12 @@ class Clause {
             }
             return os;
         }
+
+        std::set< Literal > GetLiterals() const
+        {
+            return literals;
+        }
+
     private:
         std::set< Literal > literals;
 };
@@ -213,36 +219,38 @@ class CNF {
             //"or" is defined later 
             CNF result;
 
-            if (clauses.size() == 1) 
-            {
-                const Clause& clause = *clauses.begin();
-
-                for (const Literal& lit : clause) 
-                {
-                    Literal negatedLit = ~lit;
-                    Clause newClause;
-                    newClause.AddLiteral(negatedLit);
-                    result = result & CNF(newClause);
-                }
+            if (clauses.empty()) {
+                return result;
             }
-            else
-            {
-                std::vector<CNF> negatedClauses;
-                for (const Clause& clause : clauses) 
-                {
-                    CNF temp;
-                    for (const Literal& lit : clause) 
-                    {
-                        Clause singleClause;
-                        singleClause.AddLiteral(~lit);
-                        temp = temp & CNF(singleClause); // ~clause = ~A & ~B & ~C
-                    }
-                    negatedClauses.push_back(temp);
-                }
 
+            // Single clause case: ~(A|B|C) = ~A & ~B & ~C
+        if (clauses.size() == 1) {
+            const Clause& clause = *clauses.begin();
+            for (const Literal& lit : clause) {
+                Clause newClause;
+                newClause.AddLiteral(~lit);
+                result.clauses.insert(newClause);
+            }
+            return result;
+        }
+
+            // Multiple clauses case: ~(C1&C2&..&Cn) = ~C1 | ~C2 | ... | ~Cn
+            // Using distributive law of negation over AND
+            std::vector<CNF> negatedClauses;
+            for (const Clause& clause : clauses) {
+                CNF negatedClause;
+                for (const Literal& lit : clause) {
+                    Clause unitClause;
+                    unitClause.AddLiteral(~lit);
+                    negatedClause = negatedClause & CNF(unitClause);
+                }
+                negatedClauses.push_back(negatedClause);
+            }
+
+            // Combine using OR (distributive law)
+            if (!negatedClauses.empty()) {
                 result = negatedClauses[0];
-                for (size_t i = 1; i < negatedClauses.size(); ++i) 
-                {
+                for (size_t i = 1; i < negatedClauses.size(); ++i) {
                     result = result | negatedClauses[i];
                 }
             }
@@ -253,8 +261,9 @@ class CNF {
         // =>
         CNF const operator>( CNF const& op2 ) const 
         {
-            CNF const& op1 = *this;
-            return ~(op1)|op2;
+            // A => B is equivalent to ~A | B
+            CNF negatedThis = this->operator~();
+            return negatedThis | op2;
         }
         ////////////////////////////////////////////////////////////////////////
         // and
@@ -279,15 +288,31 @@ class CNF {
             //              c3|c4 & c3|c5 & c3|c6
             CNF result;
 
-            for (const Clause& c1 : this->clauses) 
-            {
-                for (const Clause& c2 : op2.clauses) 
-                {
+            // Handle empty cases
+            if (this->Empty()) return op2;
+            if (op2.Empty()) return *this;
+
+
+            // Check for complementary literals that would create tautologies
+            for (const Clause& c1 : clauses) {
+                for (const Clause& c2 : op2.clauses) {
                     Clause combined = c1 | c2;
-                    result.clauses.insert(combined);
+                    
+                    // Skip tautologies (clauses containing A and ~A)
+                    bool isTautology = false;
+                    for (const Literal& lit : combined) {
+                        if (combined.GetLiterals().find(~lit) != combined.GetLiterals().end()) {
+                            isTautology = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!isTautology) {
+                        result.clauses.insert(combined);
+                    }
                 }
             }
-        
+                    
             return result;
         }
 
