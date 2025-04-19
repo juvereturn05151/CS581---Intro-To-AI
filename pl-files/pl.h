@@ -298,18 +298,7 @@ class CNF {
                 for (const Clause& c2 : op2.clauses) {
                     Clause combined = c1 | c2;
                     
-                    // Skip tautologies (clauses containing A and ~A)
-                    bool isTautology = false;
-                    for (const Literal& lit : combined) {
-                        if (combined.GetLiterals().find(~lit) != combined.GetLiterals().end()) {
-                            isTautology = true;
-                            break;
-                        }
-                    }
-                    
-                    if (!isTautology) {
-                        result.clauses.insert(combined);
-                    }
+                    result.clauses.insert(combined);
                 }
             }
                     
