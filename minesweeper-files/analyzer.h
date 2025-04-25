@@ -10,6 +10,10 @@ class Analyzer {
         std::pair<int,int> ApplyRule12( MSfieldPart1 & f, bool open );
         //returns a pair of counts - (new safe cells,new mines);
 		std::pair<int,int> ApplyRule3 ( MSfieldPart1 & f, bool open );
+		void ComputeSetDifference(
+			const std::set<std::pair<int, int>>& a,
+			const std::set<std::pair<int, int>>& b,
+			std::set<std::pair<int, int>>& a_minus_b);
 		MSfieldPart1 & field;           //actual field
 		MSfieldPart1 temp;              //temporary field for proof by contradiction
 	public:
