@@ -83,9 +83,9 @@ std::pair<int,int> Analyzer::ApplyRule3 ( MSfieldPart1 & f, bool open )
                 continue;
             } 
 
-            int val1 = f.GetMineCount(x1, y1);
-            int km1 = f.KnownMines(x1, y1);
-            std::set<std::pair<int, int>> ul1 = f.UnKnownLocations(x1, y1);
+            int mine_count1 = f.GetMineCount(x1, y1);
+            int known_mine1 = f.KnownMines(x1, y1);
+            std::set<std::pair<int, int>> unknown_location1 = f.UnKnownLocations(x1, y1);
 
             for (int y2 = 0; y2 < f.GetMaxY(); y2++) 
             {
@@ -101,18 +101,18 @@ std::pair<int,int> Analyzer::ApplyRule3 ( MSfieldPart1 & f, bool open )
                         continue;
                     } 
 
-                    int val2 = f.GetMineCount(x2, y2);
-                    int km2 = f.KnownMines(x2, y2);
-                    std::set<std::pair<int, int>> ul2 = f.UnKnownLocations(x2, y2);
+                    int mine_count2 = f.GetMineCount(x2, y2);
+                    int known_mine2 = f.KnownMines(x2, y2);
+                    std::set<std::pair<int, int>> unknown_location2 = f.UnKnownLocations(x2, y2);
 
                     std::set<std::pair<int, int>> ul1_minus_ul2;
                     std::set<std::pair<int, int>> ul2_minus_ul1;
 
-                    ComputeSetDifference(ul1, ul2, ul1_minus_ul2);
-                    ComputeSetDifference(ul2, ul1, ul2_minus_ul1);
+                    ComputeSetDifference(unknown_location1, unknown_location2, ul1_minus_ul2);
+                    ComputeSetDifference(unknown_location2, unknown_location1, ul2_minus_ul1);
 
                     // rule# 3
-                    int left = (val1 - km1) - (val2 - km2);
+                    int left = (mine_count1 - known_mine1) - (mine_count2 - known_mine2);
                     int right = static_cast<int>(ul1_minus_ul2.size());
 
                     if (left == right) 
@@ -178,7 +178,7 @@ bool Analyzer::IsMine(int x,int y) {
         auto res12 = ApplyRule12(temp, false);
         auto res3 = ApplyRule3(temp, false);
         
-        // Check for contradictions (Rules 4 and 5)
+        // Check for contradictions
         for (int y = 0; y < temp.GetMaxY(); y++) 
         {
             for (int x = 0; x < temp.GetMaxX(); x++) 
