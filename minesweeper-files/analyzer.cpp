@@ -140,8 +140,31 @@ bool Analyzer::IsMine(int x,int y) {
 	temp.MarkAsSafe(x,y);
     bool proved = false;
 
-
-
+    do {
+        proved = false;
+        
+        auto res12 = ApplyRule12(temp, false);
+        auto res3 = ApplyRule3(temp, false);
+        
+        // Check for contradictions (Rules 4 and 5)
+        for (int y = 0; y < temp.GetMaxY(); y++) {
+            for (int x = 0; x < temp.GetMaxX(); x++) {
+                if (!temp.IsClicked(x, y)) continue;
+                
+                int val = temp.GetMineCount(x, y);
+                int km = temp.KnownMines(x, y);
+                int ul = temp.UnKnownLocations(x, y).size();
+                
+                // Rule 4: Too many mines
+                if (val < km) return true;
+                
+                // Rule 5: Not enough possible mines
+                if (val > km + ul) return true;
+            }
+        }
+        
+        proved = (res12.first + res12.second + res3.first + res3.second) > 0;
+    } while (proved);
 
 	return proved;
 }
@@ -152,9 +175,31 @@ bool Analyzer::IsSafe(int x, int y) {
 	temp.MarkAsMine(x,y);
     bool proved = false;
 
-
-
-
+    do {
+        proved = false;
+        
+        auto res12 = ApplyRule12(temp, false);
+        auto res3 = ApplyRule3(temp, false);
+        
+        // Check for contradictions (Rules 4 and 5)
+        for (int y = 0; y < temp.GetMaxY(); y++) {
+            for (int x = 0; x < temp.GetMaxX(); x++) {
+                if (!temp.IsClicked(x, y)) continue;
+                
+                int val = temp.GetMineCount(x, y);
+                int km = temp.KnownMines(x, y);
+                int ul = temp.UnKnownLocations(x, y).size();
+                
+                // Rule 4: Too many mines
+                if (val < km) return true;
+                
+                // Rule 5: Not enough possible mines
+                if (val > km + ul) return true;
+            }
+        }
+        
+        proved = (res12.first + res12.second + res3.first + res3.second) > 0;
+    } while (proved);
 
 	return proved;
 }
