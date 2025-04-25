@@ -29,5 +29,7 @@ class Solver : public Analyzer {
 	public:
 		Solver(MSfieldPart2 & field);
         void Solve( );
+		bool HasUnknownCells() const;
+		void MakeRandomGuess();
 };
 #endif

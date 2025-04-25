@@ -178,7 +178,7 @@ bool Analyzer::IsMine(int x,int y) {
         auto res12 = ApplyRule12(temp, false);
         auto res3 = ApplyRule3(temp, false);
         
-        // Check for contradictions
+        //check for contradictions
         for (int y = 0; y < temp.GetMaxY(); y++) 
         {
             for (int x = 0; x < temp.GetMaxX(); x++) 
@@ -255,4 +255,87 @@ Solver::Solver(MSfieldPart2 & field) : Analyzer(field) {}
 void Solver::Solve( ) 
 {
     //part 2
+    bool proved;
+    do {
+        proved = false;
+        
+        //find safe moves
+        for (int y = 0; y < field.GetMaxY(); y++) 
+        {
+            for (int x = 0; x < field.GetMaxX(); x++) 
+            {
+                if (field.IsUnknown(x, y) && IsSafe(x, y)) 
+                {
+                    field.OpenLocation(x, y);
+                    proved = true;
+                }
+            }
+        }
+        
+        //find mines
+        for (int y = 0; y < field.GetMaxY(); y++) 
+        {
+            for (int x = 0; x < field.GetMaxX(); x++) 
+            {
+                if (field.IsUnknown(x, y) && IsMine(x, y)) 
+                {
+                    field.MarkAsMine(x, y);
+                    proved = true;
+                }
+            }
+        }
+        
+        ApplyRule12(field, true);
+        ApplyRule3(field, true);
+        
+    } while (proved && HasUnknownCells());
+    
+    //if game isn't finished, make a random guess
+    if (HasUnknownCells()) 
+    {
+        MakeRandomGuess();
+    }
+}
+
+bool Solver::HasUnknownCells() const 
+{
+    for (int y = 0; y < field.GetMaxY(); y++) 
+    {
+        for (int x = 0; x < field.GetMaxX(); x++) 
+        {
+            if (field.IsUnknown(x, y)) 
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+void Solver::MakeRandomGuess() 
+{
+    // Collect all unknown cells
+    std::vector<std::pair<int, int>> unknown_cells;
+    
+    for (int y = 0; y < field.GetMaxY(); y++) 
+    {
+        for (int x = 0; x < field.GetMaxX(); x++) 
+        {
+            if (field.IsUnknown(x, y)) 
+            {
+                unknown_cells.emplace_back(x, y);
+            }
+        }
+    }
+    
+    if (!unknown_cells.empty()) 
+    {
+        //random like a fool
+        auto& random_cell = unknown_cells[rand() % unknown_cells.size()];
+        field.OpenLocation(random_cell.first, random_cell.second);
+        
+        //continue solving after the guess
+        Solve();
+    }
 }
